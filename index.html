@@ -599,4 +599,128 @@
                 company: 'Meta Platforms Inc.',
                 ticker: 'META',
                 headline: 'Meta CFO Announces Departure, Search for Replacement Underway',
-                category: '
+                category: 'executive',
+                sentiment: 'neutral',
+                impact: 'medium',
+                source: 'Financial Times',
+                time: '8 hours ago',
+                summary: 'Chief Financial Officer to step down after 6 years, citing personal reasons.'
+            },
+            {
+                id: 6,
+                company: 'NVIDIA Corporation',
+                ticker: 'NVDA',
+                headline: 'NVIDIA Announces 10:1 Stock Split, Q4 Earnings Exceed Estimates',
+                category: 'earnings',
+                sentiment: 'positive',
+                impact: 'high',
+                source: 'MarketWatch',
+                time: '10 hours ago',
+                summary: 'Strong AI chip demand drives 265% revenue growth; board approves stock split effective next month.'
+            },
+            {
+                id: 7,
+                company: 'Pfizer Inc.',
+                ticker: 'PFE',
+                headline: 'Pfizer Completes $43B Merger with Biotech Firm Seagen',
+                category: 'merger',
+                sentiment: 'positive',
+                impact: 'high',
+                source: 'Reuters',
+                time: '12 hours ago',
+                summary: 'Merger positions Pfizer as leader in cancer treatment, expected to add $3B in annual revenue.'
+            },
+            {
+                id: 8,
+                company: 'JPMorgan Chase',
+                ticker: 'JPM',
+                headline: 'JPMorgan Q4 Profit Jumps 32% on Strong Trading Revenue',
+                category: 'earnings',
+                sentiment: 'positive',
+                impact: 'medium',
+                source: 'Bloomberg',
+                time: '14 hours ago',
+                summary: 'Bank reports record quarterly profit of $13.4B, beating analyst estimates.'
+            }
+        ];
+
+        let allNews = newsData;
+
+        function getSentimentIcon(sentiment) {
+            const icons = {
+                positive: '<svg class="sentiment-icon sentiment-positive" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>',
+                negative: '<svg class="sentiment-icon sentiment-negative" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>',
+                neutral: '<svg class="sentiment-icon sentiment-neutral" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'
+            };
+            return icons[sentiment] || icons.neutral;
+        }
+
+        function renderNews(newsArray) {
+            const feed = document.getElementById('newsFeed');
+            
+            if (newsArray.length === 0) {
+                feed.innerHTML = '<div class="no-results"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><p>No news items found matching your criteria</p></div>';
+                return;
+            }
+
+            feed.innerHTML = newsArray.map(item => `
+                <div class="news-item">
+                    <div class="news-header">
+                        <span class="category-badge category-${item.category}">
+                            ${item.category.charAt(0).toUpperCase() + item.category.slice(1)}
+                        </span>
+                        <span class="impact-badge impact-${item.impact}">
+                            ${item.impact.charAt(0).toUpperCase() + item.impact.slice(1)} Impact
+                        </span>
+                        <span class="time">${item.time}</span>
+                    </div>
+                    <div class="news-content">
+                        ${getSentimentIcon(item.sentiment)}
+                        <div style="flex: 1;">
+                            <div class="company-name">
+                                ${item.company}
+                                <span class="ticker">${item.ticker}</span>
+                            </div>
+                            <div class="headline">${item.headline}</div>
+                            <div class="summary">${item.summary}</div>
+                        </div>
+                    </div>
+                    <div class="news-footer">
+                        <div class="source">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                            </svg>
+                            Source: ${item.source}
+                        </div>
+                        <a href="#" class="read-more">Read Full Article →</a>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterNews() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const category = document.getElementById('categoryFilter').value;
+
+            const filtered = allNews.filter(item => {
+                const matchCategory = category === 'all' || item.category === category;
+                const matchSearch = !search || 
+                    item.company.toLowerCase().includes(search) ||
+                    item.ticker.toLowerCase().includes(search) ||
+                    item.headline.toLowerCase().includes(search);
+                return matchCategory && matchSearch;
+            });
+
+            renderNews(filtered);
+        }
+
+        function refreshNews() {
+            const feed = document.getElementById('newsFeed');
+            feed.innerHTML = '<div class="loading"><svg class="spinner" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg></div>';
+            setTimeout(() => renderNews(allNews), 1000);
+        }
+
+        renderNews(allNews);
+    </script>
+</body>
+</html>
