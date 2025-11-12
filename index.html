@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Market News Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            padding: 24px;
+        }
+        
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .icon-box {
+            padding: 12px;
+            background: #3b82f6;
+            border-radius: 8px;
+        }
+        
+        .icon-box svg {
+            width: 32px;
+            height: 32px;
+            color: white;
+        }
+        
+        h1 {
+            font-size: 2em;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .subtitle {
+            color: #94a3b8;
+            font-size: 0.95em;
+        }
+        
+        .refresh-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95em;
+            transition: background 0.2s;
+        }
+        
+        .refresh-btn:hover {
+            background: #2563eb;
+        }
+        
+        .refresh-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .insights-section {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 32px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .insights-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .insights-header svg {
+            width: 24px;
+            height: 24px;
+            color: #fbbf24;
+        }
+
+        .insights-header h2 {
+            font-size: 1.5em;
+            color: white;
+        }
+
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        .insight-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 16px;
+            backdrop-filter: blur(10px);
+        }
+
+        .insight-card h3 {
+            color: #fbbf24;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .insight-card p {
+            color: white;
+            line-height: 1.6;
+            font-size: 0.95em;
+        }
+
+        .trend-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .trend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .trend-item:last-child {
+            border-bottom: none;
+        }
+
+        .trend-icon {
+            width: 16px;
+            height: 16px;
+        }
+
+        .trend-up { color: #10b981; }
+        .trend-down { color: #ef4444; }
+
+        .suggestion-box {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+
+        .suggestion-box h3 {
+            color: #22c55e;
+            font-size: 1em;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .suggestion-box svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .suggestion-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .suggestion-list li {
+            color: #d1fae5;
+            padding: 8px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .suggestion-list li::before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #22c55e;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+        }
+        
+        .search-input {
+            flex: 1;
+            min-width: 250px;
+            padding: 10px 16px;
+            background: #1e293b;
+            color: white;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            font-size: 0.95em;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        
+        .category-select {
+            padding: 10px 16px;
+            background: #1e293b;
+            color: white;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            font-size: 0.95em;
+            cursor: pointer;
+        }
+        
+        .category-select:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        
+        .news-item {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 16px;
+            transition: border-color 0.2s;
+        }
+        
+        .news-item:hover {
+            border-color: #3b82f6;
+        }
+        
+        .news-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .category-badge {
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 0.75em;
+            font-weight: 600;
+        }
+        
+        .category-earnings { background: #dbeafe; color: #1e40af; }
+        .category-acquisition { background: #e9d5ff; color: #6b21a8; }
+        .category-merger { background: #e9d5ff; color: #6b21a8; }
+        .category-deal { background: #d1fae5; color: #065f46; }
+        .category-executive { background: #fed7aa; color: #92400e; }
+        
+        .impact-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-weight: 600;
+        }
+        
+        .impact-high { background: #fee2e2; color: #991b1b; }
+        .impact-medium { background: #fef3c7; color: #92400e; }
+        .impact-low { background: #d1fae5; color: #065f46; }
+        
+        .time {
+            color: #64748b;
+            font-size: 0.85em;
+        }
+        
+        .news-content {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .sentiment-icon {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+        
+        .sentiment-positive { color: #10b981; }
+        .sentiment-negative { color: #ef4444; transform: rotate(180deg); }
+        .sentiment-neutral { color: #6b7280; }
+        
+        .company-name {
+            font-size: 1.25em;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 8px;
+        }
+        
+        .ticker {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #334155;
+            color: #60a5fa;
+            font-size: 0.75em;
+            font-family: monospace;
+            border-radius: 4px;
+            margin-left: 8px;
+        }
+        
+        .headline {
+            font-size: 1.1em;
+            color: #e2e8f0;
+            margin-bottom: 8px;
+        }
+        
+        .summary {
+            color: #94a3b8;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+        
+        .news-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #334155;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        
+        .source {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #64748b;
+            font-size: 0.85em;
+        }
+        
+        .source svg {
+            width: 16px;
+            height: 16px;
+        }
+        
+        .read-more {
+            color: #60a5fa;
+            text-decoration: none;
+            font-size: 0.85em;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        
+        .read-more:hover {
+            color: #93c5fd;
+        }
+        
+        .footer-note {
+            margin-top: 32px;
+            padding: 16px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .footer-note p {
+            color: #94a3b8;
+            font-size: 0.85em;
+        }
+        
+        .footer-note strong {
+            color: #cbd5e1;
+        }
+        
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 80px 0;
+        }
+        
+        .spinner {
+            width: 32px;
+            height: 32px;
+            color: #3b82f6;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 80px 20px;
+            color: #94a3b8;
+        }
+        
+        .no-results svg {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 16px;
+            opacity: 0.5;
+        }
+        
+        @media (max-width: 768px) {
+            h1 { font-size: 1.5em; }
+            .controls { flex-direction: column; }
+            .search-input { width: 100%; }
+            .insights-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <div class="icon-box">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1>Stock Market News Monitor</h1>
+                    <p class="subtitle">Real-time market-moving news with AI-powered insights</p>
+                </div>
+            </div>
+            <button class="refresh-btn" onclick="refreshNews()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Refresh
+            </button>
+        </div>
+
+        <!-- AI Insights Section -->
+        <div class="insights-section">
+            <div class="insights-header">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                </svg>
+                <h2>Market Insights & Suggestions</h2>
+            </div>
+            <div class="insights-grid">
+                <div class="insight-card">
+                    <h3>Trending Sectors</h3>
+                    <ul class="trend-list">
+                        <li class="trend-item">
+                            <svg class="trend-icon trend-up" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                            </svg>
+                            <span style="color: white;">Technology - Strong AI chip demand</span>
+                        </li>
+                        <li class="trend-item">
+                            <svg class="trend-icon trend-up" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                            </svg>
+                            <span style="color: white;">Healthcare - Major M&A activity</span>
+                        </li>
+                        <li class="trend-item">
+                            <svg class="trend-icon trend-down" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path>
+                            </svg>
+                            <span style="color: white;">Automotive - Production challenges</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="insight-card">
+                    <h3>Key Patterns (Last 3 Days)</h3>
+                    <p>• 5 companies reported earnings beats<br>
+                    • 3 major acquisitions announced<br>
+                    • Banking sector showing strong profits<br>
+                    • Tech companies experiencing 8-12% growth</p>
+                </div>
+
+                <div class="insight-card">
+                    <h3>High Impact Events</h3>
+                    <p>• NVDA stock split could increase retail accessibility<br>
+                    • Microsoft's $75B acquisition signals gaming consolidation<br>
+                    • Tesla delivery miss may impact EV sector sentiment</p>
+                </div>
+            </div>
+
+            <div class="suggestion-box">
+                <h3>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                    AI-Powered Suggestions
+                </h3>
+                <ul class="suggestion-list">
+                    <li>Monitor AAPL closely - consistent earnings beats suggest strong momentum</li>
+                    <li>Watch for ripple effects from TSLA delivery miss across EV suppliers</li>
+                    <li>Healthcare sector M&A trend (PFE/Seagen) may signal more consolidation</li>
+                    <li>Tech giants (MSFT, NVDA) showing aggressive growth - sector rotation possible</li>
+                    <li>Financial sector strength (JPM) could indicate economic resilience</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="controls">
+            <input 
+                type="text" 
+                class="search-input" 
+                id="searchInput" 
+                placeholder="Search by company, ticker, or headline..."
+                onkeyup="filterNews()"
+            >
+            <select class="category-select" id="categoryFilter" onchange="filterNews()">
+                <option value="all">All Categories</option>
+                <option value="earnings">Earnings</option>
+                <option value="acquisition">Acquisitions</option>
+                <option value="merger">Mergers</option>
+                <option value="deal">Deals</option>
+                <option value="executive">Executive Changes</option>
+            </select>
+        </div>
+
+        <div id="newsFeed"></div>
+
+        <div class="footer-note">
+            <p><strong>Note:</strong> This is a prototype with simulated data. In production, this would connect to real financial news APIs (Alpha Vantage, Finnhub, NewsAPI, etc.) and use AI/ML models to analyze trends and generate personalized insights based on historical data.</p>
+        </div>
+    </div>
+
+    <script>
+        const newsData = [
+            {
+                id: 1,
+                company: 'Apple Inc.',
+                ticker: 'AAPL',
+                headline: 'Apple Reports Q4 Earnings Beat, Revenue Up 8% YoY',
+                category: 'earnings',
+                sentiment: 'positive',
+                impact: 'high',
+                source: 'Reuters',
+                time: '2 hours ago',
+                summary: 'Apple exceeded Wall Street expectations with quarterly earnings of $1.64 per share versus expected $1.60, driven by strong iPhone 15 sales.'
+            },
+            {
+                id: 2,
+                company: 'Microsoft Corporation',
+                ticker: 'MSFT',
+                headline: 'Microsoft Announces $75B Acquisition of Gaming Studio',
+                category: 'acquisition',
+                sentiment: 'positive',
+                impact: 'high',
+                source: 'Bloomberg',
+                time: '4 hours ago',
+                summary: 'Microsoft to acquire major gaming studio in largest deal since Activision, expanding cloud gaming portfolio.'
+            },
+            {
+                id: 3,
+                company: 'Tesla Inc.',
+                ticker: 'TSLA',
+                headline: 'Tesla Misses Q4 Delivery Targets, Stock Drops in Pre-Market',
+                category: 'earnings',
+                sentiment: 'negative',
+                impact: 'high',
+                source: 'CNBC',
+                time: '5 hours ago',
+                summary: 'Tesla delivered 380,000 vehicles versus expected 420,000, citing production challenges at Berlin facility.'
+            },
+            {
+                id: 4,
+                company: 'Amazon.com Inc.',
+                ticker: 'AMZN',
+                headline: 'Amazon AWS Signs $10B Cloud Deal with Government Agency',
+                category: 'deal',
+                sentiment: 'positive',
+                impact: 'medium',
+                source: 'Wall Street Journal',
+                time: '6 hours ago',
+                summary: 'Multi-year contract strengthens Amazon\'s position in government cloud services market.'
+            },
+            {
+                id: 5,
+                company: 'Meta Platforms Inc.',
+                ticker: 'META',
+                headline: 'Meta CFO Announces Departure, Search for Replacement Underway',
+                category: '
