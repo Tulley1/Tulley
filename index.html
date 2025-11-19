@@ -455,6 +455,90 @@
         let allNews = [];
         const API_KEY = 'ctea3n1r01qmehnl4r5gctea3n1r01qmehnl4r60'; // Shared demo key
 
+        // Pre-loaded news that appears instantly
+        const initialNews = [
+            {
+                id: 0,
+                headline: 'Tech Giants Report Strong Q4 Earnings, Market Rallies',
+                summary: 'Major technology companies exceeded Wall Street expectations with robust quarterly results, driving significant gains across the sector as investors show renewed confidence in tech fundamentals.',
+                source: 'Bloomberg',
+                time: '3 hours ago',
+                url: '#',
+                category: 'technology',
+                related: 'AAPL, MSFT, GOOGL'
+            },
+            {
+                id: 1,
+                headline: 'Federal Reserve Signals Cautious Approach to Rate Changes',
+                summary: 'Central bank officials indicate a measured stance on monetary policy adjustments, citing mixed economic indicators and ongoing inflation monitoring in their latest policy statement.',
+                source: 'Reuters',
+                time: '5 hours ago',
+                url: '#',
+                category: 'finance',
+                related: 'SPY, DXY'
+            },
+            {
+                id: 2,
+                headline: 'Healthcare Sector Sees Major M&A Activity Surge',
+                summary: 'Pharmaceutical and biotech companies announce multiple merger and acquisition deals totaling billions, signaling continued consolidation in the healthcare industry.',
+                source: 'CNBC',
+                time: '7 hours ago',
+                url: '#',
+                category: 'healthcare',
+                related: 'JNJ, PFE, ABBV'
+            },
+            {
+                id: 3,
+                headline: 'Energy Prices Fluctuate on Global Supply Concerns',
+                summary: 'Oil and natural gas markets experience volatility as geopolitical tensions and production decisions from major producers impact global energy supply forecasts.',
+                source: 'Wall Street Journal',
+                time: '9 hours ago',
+                url: '#',
+                category: 'energy',
+                related: 'XOM, CVX'
+            },
+            {
+                id: 4,
+                headline: 'Consumer Spending Shows Resilience Despite Economic Uncertainty',
+                summary: 'Retail sales data exceeds expectations, indicating strong consumer demand and economic resilience even as concerns about recession persist among market analysts.',
+                source: 'Financial Times',
+                time: '11 hours ago',
+                url: '#',
+                category: 'consumer',
+                related: 'WMT, TGT, AMZN'
+            },
+            {
+                id: 5,
+                headline: 'Semiconductor Stocks Rally on AI Chip Demand Forecast',
+                summary: 'Chipmakers see significant gains as industry analysts project continued strong demand for artificial intelligence processors, with several companies raising revenue guidance.',
+                source: 'MarketWatch',
+                time: '1 day ago',
+                url: '#',
+                category: 'technology',
+                related: 'NVDA, AMD, INTC'
+            },
+            {
+                id: 6,
+                headline: 'Banking Sector Profits Beat Estimates on Trading Revenue',
+                summary: 'Major financial institutions report better-than-expected quarterly profits driven by strong performance in trading divisions and improved net interest margins.',
+                source: 'Bloomberg',
+                time: '1 day ago',
+                url: '#',
+                category: 'finance',
+                related: 'JPM, BAC, GS'
+            },
+            {
+                id: 7,
+                headline: 'Renewable Energy Investments Hit Record Levels',
+                summary: 'Global investment in renewable energy projects reaches all-time high as governments and corporations accelerate transition to sustainable energy sources.',
+                source: 'Reuters',
+                time: '2 days ago',
+                url: '#',
+                category: 'energy',
+                related: 'TSLA, ENPH, NEE'
+            }
+        ];
+
         async function fetchNews() {
             const feed = document.getElementById('newsFeed');
             const sector = document.getElementById('sectorFilter').value;
@@ -687,7 +771,15 @@
         }
 
         // Auto-load news on page load
-        window.onload = () => fetchNews();
+        window.onload = () => {
+            // Show initial news immediately
+            allNews = initialNews;
+            updateInsights();
+            renderNews(allNews);
+            
+            // Then fetch live news in the background
+            fetchNews();
+        };
     </script>
 </body>
 </html>
