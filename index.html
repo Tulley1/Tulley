@@ -432,12 +432,12 @@
                 onkeyup="filterNews()"
             >
             <select class="category-select" id="sectorFilter" onchange="fetchNews()">
+                <option value="general">📰 All Market News</option>
                 <option value="technology">💻 Technology</option>
                 <option value="healthcare">🏥 Healthcare</option>
                 <option value="finance">🏦 Finance</option>
                 <option value="energy">⚡ Energy</option>
                 <option value="consumer">🛒 Consumer</option>
-                <option value="general">📰 All Sectors</option>
             </select>
             <select class="category-select" id="sourceFilter" onchange="filterNews()">
                 <option value="all">All Sources</option>
@@ -464,8 +464,9 @@
                 source: 'Bloomberg',
                 time: '3 hours ago',
                 url: '#',
-                category: 'technology',
-                related: 'AAPL, MSFT, GOOGL'
+                category: 'general',
+                related: 'AAPL, MSFT, GOOGL',
+                isHighImpact: true
             },
             {
                 id: 1,
@@ -474,8 +475,9 @@
                 source: 'Reuters',
                 time: '5 hours ago',
                 url: '#',
-                category: 'finance',
-                related: 'SPY, DXY'
+                category: 'general',
+                related: 'SPY, DXY',
+                isHighImpact: true
             },
             {
                 id: 2,
@@ -484,8 +486,9 @@
                 source: 'CNBC',
                 time: '7 hours ago',
                 url: '#',
-                category: 'healthcare',
-                related: 'JNJ, PFE, ABBV'
+                category: 'general',
+                related: 'JNJ, PFE, ABBV',
+                isHighImpact: true
             },
             {
                 id: 3,
@@ -494,8 +497,9 @@
                 source: 'Wall Street Journal',
                 time: '9 hours ago',
                 url: '#',
-                category: 'energy',
-                related: 'XOM, CVX'
+                category: 'general',
+                related: 'XOM, CVX',
+                isHighImpact: true
             },
             {
                 id: 4,
@@ -504,8 +508,9 @@
                 source: 'Financial Times',
                 time: '11 hours ago',
                 url: '#',
-                category: 'consumer',
-                related: 'WMT, TGT, AMZN'
+                category: 'general',
+                related: 'WMT, TGT, AMZN',
+                isHighImpact: false
             },
             {
                 id: 5,
@@ -514,8 +519,9 @@
                 source: 'MarketWatch',
                 time: '1 day ago',
                 url: '#',
-                category: 'technology',
-                related: 'NVDA, AMD, INTC'
+                category: 'general',
+                related: 'NVDA, AMD, INTC',
+                isHighImpact: true
             },
             {
                 id: 6,
@@ -524,8 +530,9 @@
                 source: 'Bloomberg',
                 time: '1 day ago',
                 url: '#',
-                category: 'finance',
-                related: 'JPM, BAC, GS'
+                category: 'general',
+                related: 'JPM, BAC, GS',
+                isHighImpact: true
             },
             {
                 id: 7,
@@ -534,21 +541,22 @@
                 source: 'Reuters',
                 time: '2 days ago',
                 url: '#',
-                category: 'energy',
-                related: 'TSLA, ENPH, NEE'
+                category: 'general',
+                related: 'TSLA, ENPH, NEE',
+                isHighImpact: false
             }
         ];
 
         async function fetchNews() {
-            const feed = document.getElementById('newsFeed');
             const sector = document.getElementById('sectorFilter').value;
             
-            feed.innerHTML = '<div class="loading"><svg class="spinner" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg><div class="loading-text">Fetching live market news...</div></div>';
-
             try {
                 const response = await fetch(`https://finnhub.io/api/v1/news?category=${sector}&token=${API_KEY}`);
                 
-                if (!response.ok) throw new Error('Failed to fetch news');
+                if (!response.ok) {
+                    console.log('API call failed, using pre-loaded news');
+                    return; // Keep using initial news
+                }
 
                 const data = await response.json();
                 
@@ -567,11 +575,11 @@
                     updateInsights();
                     renderNews(allNews);
                 } else {
-                    throw new Error('No news available');
+                    console.log('No data from API, keeping initial news');
                 }
             } catch (error) {
-                console.error('Error:', error);
-                feed.innerHTML = `<div class="loading-text" style="text-align: center; padding: 60px 20px;">Unable to load news. Please try refreshing.</div>`;
+                console.error('Error fetching news:', error);
+                // Keep showing initial news on error
             }
         }
 
@@ -697,7 +705,7 @@
                 return `
                 <div class="news-item" id="news-${item.id}" onclick="toggleAnalysis(${item.id})">
                     <div class="news-header">
-                        <span class="category-badge">${item.category.toUpperCase()}</span>
+                        <span class="category-badge">${item.isHighImpact ? '🔥 HIGH IMPACT' : 'MARKET NEWS'}</span>
                         <span class="time">${item.time}</span>
                     </div>
                     <div>
