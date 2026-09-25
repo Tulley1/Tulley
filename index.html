@@ -280,6 +280,8 @@ table.grid tr:hover td { background:#171a1f; }
 
                 <div class="insights-box" id="insightsBox"><p>Loading insights...</p></div>
 
+                <div class="insights-box" id="trendingBox"><p>Loading trending tickers...</p></div>
+
                 <div class="filter-row">
                     <input type="text" id="searchInput" placeholder="Search headline, ticker, source..." onkeyup="filterNews()">
                     <div class="toggle-group" id="indexToggle">
@@ -357,8 +359,10 @@ let portfolio = []; // {ticker, shares, cost}
 let indexScope = 'all';
 let quotes = {}; // ticker -> {c,d,dp,h,l,o}
 let currentView = 'news';
+let trendingTickers = [];
 const API_KEY = 'ctea3n1r01qmehnl4r5gctea3n1r01qmehnl4r60';
 const screenerDefaults = ['AAPL','MSFT','GOOGL','AMZN','TSLA','NVDA','SPY','QQQ'];
+const popularTickers = ['AAPL','MSFT','NVDA','AMZN','GOOGL','META','TSLA','AMD','NFLX','JPM','V','WMT','AVGO','COST'];
 
 const nasdaqTickers = ['AAPL','MSFT','GOOGL','GOOG','AMZN','NVDA','META','TSLA','AVGO','COST','NFLX','AMD','PEP','ADBE','CSCO','INTC','QCOM','INTU','TXN','AMGN','HON','SBUX','BKNG','GILD','MDLZ','ADI','VRTX','REGN','PANW','LRCX','MU','SNPS','CDNS','KLAC','MELI','MAR','ORLY','CTAS','PYPL','ASML'];
 const sp500Tickers = ['AAPL','MSFT','AMZN','NVDA','GOOGL','GOOG','META','BRK.B','TSLA','UNH','JNJ','XOM','JPM','V','PG','MA','HD','CVX','MRK','ABBV','PEP','KO','COST','WMT','BAC','MCD','PFE','TMO','CSCO','ACN','ABT','DIS','NKE','LIN','ADBE','CRM','DHR','VZ','CMCSA','NEE','PM','TXN','WFC','BMY','RTX','UPS','ORCL','UNP','QCOM','HON','LOW'];
@@ -398,13 +402,87 @@ async function fetchQuote(ticker) {
 }
 
 async function refreshScreener() {
-    const tickers = [...new Set([...screenerDefaults, ...watchlist, ...portfolio.map(p => p.ticker)])];
+    const tickers = [...new Set([...screenerDefaults, ...watchlist, ...portfolio.map(p => p.ticker), ...trendingTickers])];
     const results = await Promise.all(tickers.map(t => fetchQuote(t).then(q => [t, q])));
     results.forEach(([t, q]) => { if (q) quotes[t] = q; });
     renderScreenerBar(tickers);
     if (currentView === 'watchlist') renderWatchlistTable();
     if (currentView === 'portfolio') renderPortfolioTable();
     if (currentView === 'charts') renderCharts();
+}
+
+/* ---------- TRENDING TICKERS ---------- */
+function computeTrending() {
+    const allKnown = [...new Set([...nasdaqTickers, ...sp500Tickers, ...popularTickers])];
+    const counts = {};
+
+    allNews.filter(n => !n.isWatchlist).forEach(n => {
+        const text = (n.headline || '') + ' ' + (n.summary || '');
+        allKnown.forEach(t => {
+            const re = new RegExp(`\\b${t.replace('.', '\\.')}\\b`);
+            if (re.test(text)) counts[t] = (counts[t] || 0) + 1;
+        });
+        if (n.related) {
+            n.related.split(',').map(s => s.trim().toUpperCase()).forEach(t => {
+                if (t) counts[t] = (counts[t] || 0) + 1;
+            });
+        }
+    });
+
+    let ranked = Object.entries(counts)
+        .filter(([t]) => !watchlist.includes(t))
+        .sort((a, b) => b[1] - a[1])
+        .map(([t]) => t);
+
+    // Fill remaining slots with well-known popular tickers if news mentions are sparse
+    for (const t of popularTickers) {
+        if (ranked.length >= 6) break;
+        if (!ranked.includes(t) && !watchlist.includes(t)) ranked.push(t);
+    }
+
+    trendingTickers = ranked.slice(0, 6);
+}
+
+async function renderTrendingBox() {
+    computeTrending();
+    const missing = trendingTickers.filter(t => !quotes[t]);
+    if (missing.length) {
+        const results = await Promise.all(missing.map(t => fetchQuote(t).then(q => [t, q])));
+        results.forEach(([t, q]) => { if (q) quotes[t] = q; });
+    }
+
+    const box = document.getElementById('trendingBox');
+    if (!box) return;
+
+    if (trendingTickers.length === 0) {
+        box.innerHTML = `<h3>🔥 Trending Now</h3><div class="empty-note">No trending data yet.</div>`;
+        return;
+    }
+
+    box.innerHTML = `
+        <h3>🔥 Trending Now <span style="font-weight:normal;color:#6b7280;font-size:11px;">(mentioned frequently in today's news, or a popular ticker)</span></h3>
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">
+            ${trendingTickers.map(t => {
+                const q = quotes[t];
+                const dir = q ? (q.d >= 0 ? 'up' : 'down') : '';
+                const priceStr = q ? `$${q.c.toFixed(2)} <span class="${dir}">(${q.dp.toFixed(2)}%)</span>` : '--';
+                return `<div style="border:1px solid #2a2f36; padding:6px 10px; display:flex; align-items:center; gap:8px; background:#0b0d10;">
+                    <strong style="color:#e5e7eb;">${t}</strong>
+                    <span style="font-size:12px;">${priceStr}</span>
+                    <button onclick="addTrendingToWatchlist('${t}')" style="background:#3b82f6;border:none;color:white;font-size:11px;padding:2px 8px;cursor:pointer;">+ Watch</button>
+                </div>`;
+            }).join('')}
+        </div>`;
+}
+
+function addTrendingToWatchlist(ticker) {
+    if (watchlist.includes(ticker)) return;
+    if (watchlist.length >= 10) { alert('Maximum 10 tickers.'); return; }
+    watchlist.push(ticker);
+    renderWatchlistTable();
+    renderTrendingBox();
+    fetchNews();
+    refreshScreener();
 }
 
 function renderScreenerBar(tickers) {
@@ -545,13 +623,13 @@ function renderCharts() {
             const curPct = ((cur - low) / range) * 100;
             const openPct = ((open - low) / range) * 100;
             const dir = q.d >= 0 ? 'up' : 'down';
-            headerPrice = `<span class="${dir}">${cur.toFixed(2)} (${q.dp.toFixed(2)}%)</span>`;
+            headerPrice = `<span class="${dir}">$${cur.toFixed(2)} (${q.dp.toFixed(2)}%)</span>`;
             rangeHtml = `
                 <div class="range-bar-track">
                     <div class="range-bar-marker" style="left:${openPct}%; background:#6b7280;" title="Open"></div>
                     <div class="range-bar-marker" style="left:${curPct}%; background:#3b82f6;" title="Current"></div>
                 </div>
-                <div class="range-labels"><span>Low ${low.toFixed(2)}</span><span>Open ${open.toFixed(2)}</span><span>High ${high.toFixed(2)}</span></div>`;
+                <div class="range-labels"><span>Low $${low.toFixed(2)}</span><span>Open $${open.toFixed(2)}</span><span>High $${high.toFixed(2)}</span></div>`;
         }
         return `
         <div class="range-card">
