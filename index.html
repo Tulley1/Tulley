@@ -241,6 +241,14 @@ table.grid tr:hover td { background:#171a1f; }
     background:#e5e7eb;
 }
 .range-labels { display:flex; justify-content:space-between; font-size:11px; color:#6b7280; }
+.chart-iframe-wrap {
+    width:100%;
+    height:400px;
+    border:1px solid #2a2f36;
+    margin-bottom:10px;
+    background:#0b0d10;
+}
+.chart-iframe-wrap iframe { width:100%; height:100%; border:none; }
 
 @media (max-width:768px) {
     .sidebar { width:60px; }
@@ -334,7 +342,7 @@ table.grid tr:hover td { background:#171a1f; }
             <!-- CHARTS VIEW -->
             <div id="view-charts" style="display:none;">
                 <h1 class="page-title">Charts</h1>
-                <div class="page-sub">Today's trading range for your watchlist &amp; portfolio symbols (open, day low/high, current price). Free data tier does not include full historical intraday charts — use your broker for detailed charting.</div>
+                <div class="page-sub">Live, real candlestick charts (via TradingView, free/delayed data) for your watchlist &amp; portfolio symbols, plus today's exact trading range from live quotes.</div>
                 <div id="chartsContainer"></div>
             </div>
 
@@ -519,33 +527,42 @@ function renderPortfolioNews() {
     feed.innerHTML = items.map(renderNewsRow).join('');
 }
 
-/* ---------- CHARTS (day range bars, real quote data only) ---------- */
+/* ---------- CHARTS (real TradingView charts + day range from live quotes) ---------- */
 function renderCharts() {
     const container = document.getElementById('chartsContainer');
     const tickers = [...new Set([...watchlist, ...portfolio.map(p => p.ticker)])];
     if (tickers.length === 0) {
-        container.innerHTML = `<div class="empty-note">Add tickers to your watchlist or portfolio to see their trading range here.</div>`;
+        container.innerHTML = `<div class="empty-note">Add tickers to your watchlist or portfolio to see their charts here.</div>`;
         return;
     }
     container.innerHTML = tickers.map(t => {
         const q = quotes[t];
-        if (!q) return `<div class="range-card"><div class="rtitle"><span class="sym">${t}</span><span>Loading...</span></div></div>`;
-        const low = q.l, high = q.h, cur = q.c, open = q.o;
-        const range = (high - low) || 1;
-        const curPct = ((cur - low) / range) * 100;
-        const openPct = ((open - low) / range) * 100;
-        const dir = q.d >= 0 ? 'up' : 'down';
+        let rangeHtml = '<div class="empty-note">Loading quote data...</div>';
+        let headerPrice = '';
+        if (q) {
+            const low = q.l, high = q.h, cur = q.c, open = q.o;
+            const range = (high - low) || 1;
+            const curPct = ((cur - low) / range) * 100;
+            const openPct = ((open - low) / range) * 100;
+            const dir = q.d >= 0 ? 'up' : 'down';
+            headerPrice = `<span class="${dir}">${cur.toFixed(2)} (${q.dp.toFixed(2)}%)</span>`;
+            rangeHtml = `
+                <div class="range-bar-track">
+                    <div class="range-bar-marker" style="left:${openPct}%; background:#6b7280;" title="Open"></div>
+                    <div class="range-bar-marker" style="left:${curPct}%; background:#3b82f6;" title="Current"></div>
+                </div>
+                <div class="range-labels"><span>Low ${low.toFixed(2)}</span><span>Open ${open.toFixed(2)}</span><span>High ${high.toFixed(2)}</span></div>`;
+        }
         return `
         <div class="range-card">
             <div class="rtitle">
                 <span class="sym">${t}</span>
-                <span class="${dir}">$${cur.toFixed(2)} (${q.dp.toFixed(2)}%)</span>
+                ${headerPrice}
             </div>
-            <div class="range-bar-track">
-                <div class="range-bar-marker" style="left:${openPct}%; background:#6b7280;" title="Open"></div>
-                <div class="range-bar-marker" style="left:${curPct}%; background:#3b82f6;" title="Current"></div>
+            <div class="chart-iframe-wrap">
+                <iframe src="https://www.tradingview.com/widgetembed/?symbol=${encodeURIComponent(t)}&interval=D&theme=dark&style=1&hide_top_toolbar=0&hide_legend=0&saveimage=0" scrolling="no" allowtransparency="true"></iframe>
             </div>
-            <div class="range-labels"><span>Low $${low.toFixed(2)}</span><span>Open $${open.toFixed(2)}</span><span>High $${high.toFixed(2)}</span></div>
+            ${rangeHtml}
         </div>`;
     }).join('');
 }
