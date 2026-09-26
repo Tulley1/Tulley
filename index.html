@@ -39,7 +39,6 @@ body { background:#111418; color:#d1d5db; font-size:14px; }
 }
 .nav-item:hover { background:#171a1f; color:#e5e7eb; }
 .nav-item.active { background:#171a1f; color:#3b82f6; border-left:3px solid #3b82f6; }
-.nav-item .dot { width:6px; height:6px; }
 
 /* MAIN */
 .main { flex:1; min-width:0; }
@@ -74,7 +73,7 @@ h1.page-title {
 }
 .page-sub { color:#6b7280; font-size:12px; margin-bottom:12px; }
 
-/* TABLE STYLES (screener/portfolio/watchlist) */
+/* TABLE STYLES */
 table.grid {
     width:100%;
     border-collapse:collapse;
@@ -117,7 +116,7 @@ table.grid tr:hover td { background:#171a1f; }
 }
 .add-row button:hover { background:#2563eb; }
 
-/* INSIGHTS BOX - plain */
+/* INSIGHTS BOX */
 .insights-box {
     border:1px solid #2a2f36;
     background:#171a1f;
@@ -130,7 +129,7 @@ table.grid tr:hover td { background:#171a1f; }
 .insights-box li { padding:3px 0; color:#9ca3af; }
 .insights-box li::before { content:"› "; color:#3b82f6; }
 
-/* NEWS LIST - yahoo-finance style */
+/* NEWS LIST */
 .news-row {
     display:flex;
     gap:12px;
@@ -166,10 +165,25 @@ table.grid tr:hover td { background:#171a1f; }
 .tag.watch { border-color:#16a34a; color:#16a34a; }
 .tag.macro { border-color:#f59e0b; color:#f59e0b; }
 .tag.impact { border-color:#dc2626; color:#dc2626; }
+.tag.catalyst { border-color:#8b5cf6; color:#8b5cf6; }
+.tag.major { border-color:#3b82f6; color:#3b82f6; }
 
 .news-summary { color:#9ca3af; font-size:12.5px; margin-top:4px; line-height:1.5; }
 
-/* Expanded analysis - plain boxed style */
+/* Ticker/price chips attached to news */
+.chip-row { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:8px; }
+.chip-label { color:#6b7280; font-size:10.5px; margin-right:2px; }
+.chip {
+    font-size:11.5px;
+    padding:3px 7px;
+    border:1px solid #2a2f36;
+    background:#0b0d10;
+    color:#d1d5db;
+    white-space:nowrap;
+}
+.chip strong { color:#e5e7eb; margin-right:4px; }
+
+/* Expanded analysis */
 .analysis {
     display:none;
     margin-top:10px;
@@ -217,7 +231,7 @@ table.grid tr:hover td { background:#171a1f; }
 
 .empty-note { color:#6b7280; font-size:12px; padding:10px 0; }
 
-/* Charts (range bars) */
+/* Charts */
 .range-card {
     border:1px solid #2a2f36;
     background:#171a1f;
@@ -263,6 +277,8 @@ table.grid tr:hover td { background:#171a1f; }
     <div class="sidebar">
         <div class="brand">📊 <span>Market</span>Terminal</div>
         <div class="nav-item active" data-view="news" onclick="switchView('news')">📰 <span class="label">News</span></div>
+        <div class="nav-item" data-view="earnings" onclick="switchView('earnings')">💰 <span class="label">Earnings</span></div>
+        <div class="nav-item" data-view="beta" onclick="switchView('beta')">🧬 <span class="label">Beta</span></div>
         <div class="nav-item" data-view="watchlist" onclick="switchView('watchlist')">⭐ <span class="label">Watchlist</span></div>
         <div class="nav-item" data-view="portfolio" onclick="switchView('portfolio')">💼 <span class="label">Portfolio</span></div>
         <div class="nav-item" data-view="charts" onclick="switchView('charts')">📈 <span class="label">Charts</span></div>
@@ -276,7 +292,7 @@ table.grid tr:hover td { background:#171a1f; }
             <!-- NEWS VIEW -->
             <div id="view-news">
                 <h1 class="page-title">Market News</h1>
-                <div class="page-sub">Watchlist news, government/macro events, and top market-moving stories</div>
+                <div class="page-sub">Watchlist news, government/macro events, and top market-moving stories — with live prices for affected tickers or sectors</div>
 
                 <div class="insights-box" id="insightsBox"><p>Loading insights...</p></div>
 
@@ -299,6 +315,45 @@ table.grid tr:hover td { background:#171a1f; }
                 </div>
 
                 <div id="newsFeed"></div>
+            </div>
+
+            <!-- EARNINGS VIEW -->
+            <div id="view-earnings" style="display:none;">
+                <h1 class="page-title">Earnings Calendar <button class="rm-btn" style="font-size:12px;border:1px solid #2a2f36;padding:2px 8px;" onclick="fetchEarnings(true)">↻ Refresh</button></h1>
+                <div class="page-sub">Major companies reporting earnings in the next 14 days, plus recent news that could affect those results.</div>
+
+                <table class="grid" id="earningsTable">
+                    <thead><tr><th>Symbol</th><th>Date</th><th>Time</th><th>Quarter</th><th>EPS Est.</th><th>Price</th></tr></thead>
+                    <tbody id="earningsTableBody"><tr><td colspan="6" class="empty-note">Loading earnings calendar...</td></tr></tbody>
+                </table>
+
+                <h1 class="page-title" style="margin-top:24px;">News That Could Affect These Earnings</h1>
+                <div id="earningsNewsFeed"><div class="empty-note">Loading...</div></div>
+            </div>
+
+            <!-- BETA (BIOTECH) VIEW -->
+            <div id="view-beta" style="display:none;">
+                <h1 class="page-title">Beta — Biotech Watch <button class="rm-btn" style="font-size:12px;border:1px solid #2a2f36;padding:2px 8px;" onclick="fetchBiotech(true)">↻ Refresh</button></h1>
+                <div class="page-sub">Experimental tab tracking major biotech/pharma tickers and scanning their news for language that typically precedes a data or regulatory catalyst.</div>
+
+                <div class="insights-box">
+                    <h3>📚 How Biotech Catalysts Typically Work</h3>
+                    <ul>
+                        <li>Phase 3 "topline" data is usually announced via press release weeks/months before full results are presented at a medical conference</li>
+                        <li>FDA target action dates (PDUFA dates) are typically set ~6 months (priority review) or ~10 months (standard review) after an application is accepted</li>
+                        <li>Data releases often cluster around major medical conferences: J.P. Morgan Healthcare Conference (Jan), AACR (Apr), ASCO (Jun), ESMO (Sep), ASH (Dec)</li>
+                        <li>Companies often guide expected readout timing ("mid-2026", "H2") during earnings calls or investor presentations — watch quarterly updates for changes to that guidance</li>
+                        <li>This tab flags recent news containing trial/regulatory language — it does not predict exact dates</li>
+                    </ul>
+                </div>
+
+                <table class="grid" id="biotechTable">
+                    <thead><tr><th>Symbol</th><th>Price</th><th>Change</th><th>% Change</th><th></th></tr></thead>
+                    <tbody id="biotechTableBody"><tr><td colspan="5" class="empty-note">Loading biotech quotes...</td></tr></tbody>
+                </table>
+
+                <h1 class="page-title" style="margin-top:24px;">Trial / Regulatory News Flagged as Possible Catalysts</h1>
+                <div id="biotechNewsFeed"><div class="empty-note">Loading...</div></div>
             </div>
 
             <!-- WATCHLIST VIEW -->
@@ -369,6 +424,49 @@ const sp500Tickers = ['AAPL','MSFT','AMZN','NVDA','GOOGL','GOOG','META','BRK.B',
 const nasdaqNames = ['apple','microsoft','alphabet','google','amazon','nvidia','meta','facebook','tesla','broadcom','costco','netflix','amd','pepsi','adobe','cisco','intel','qualcomm','starbucks','booking holdings'];
 const sp500Names = ['berkshire hathaway','unitedhealth','johnson & johnson','exxon','jpmorgan','visa','procter & gamble','mastercard','home depot','chevron','merck','walmart','bank of america','mcdonald','pfizer','disney','nike','verizon','union pacific'];
 
+// Sector detection: keywords -> representative top tickers for that industry
+const sectorTickers = {
+    technology: ['AAPL','MSFT','NVDA'],
+    healthcare: ['JNJ','PFE','UNH'],
+    energy: ['XOM','CVX','COP'],
+    finance: ['JPM','BAC','GS'],
+    consumer: ['WMT','AMZN','COST'],
+    industrial: ['HON','UPS','CAT'],
+    automotive: ['TSLA','GM','F'],
+    airline: ['DAL','UAL','AAL']
+};
+const sectorKeywords = {
+    technology: /technology|software|semiconductor|\bchip(s)?\b|cloud computing|artificial intelligence|\bai\b/i,
+    healthcare: /health ?care|pharma|biotech|drug (approval|trial)|fda/i,
+    energy: /\boil\b|\bgas\b|energy sector|opec|crude|pipeline/i,
+    finance: /\bbank(s|ing)?\b|financial sector|lender|interest rate|federal reserve|wall street/i,
+    consumer: /retail|consumer spending|e-commerce|shopping/i,
+    industrial: /industrial sector|manufactur|factory|supply chain|logistics/i,
+    automotive: /automaker|electric vehicle|\bev\b|auto industry/i,
+    airline: /airline|air travel|aviation/i
+};
+
+const allKnownTickers = [...new Set([...nasdaqTickers, ...sp500Tickers, ...popularTickers])];
+
+function detectTickersInText(text) {
+    const found = [];
+    for (const t of allKnownTickers) {
+        const re = new RegExp(`\\b${t.replace('.', '\\.')}\\b`);
+        if (re.test(text)) {
+            found.push(t);
+            if (found.length >= 3) break;
+        }
+    }
+    return found;
+}
+function detectSector(text) {
+    for (const [sector, re] of Object.entries(sectorKeywords)) {
+        if (re.test(text)) return sector;
+    }
+    return null;
+}
+function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
 function matchesIndex(text, tickers, names) {
     const lower = text.toLowerCase();
     return tickers.some(t => new RegExp(`\\b${t.replace('.', '\\.')}\\b`).test(text)) ||
@@ -379,15 +477,23 @@ function isMacroNews(text) {
 }
 
 /* ---------- NAV ---------- */
+let earningsLoaded = false;
+let biotechLoaded = false;
+let earningsList = [];
+let earningsNews = [];
+let biotechNews = [];
+
 function switchView(view) {
     currentView = view;
     document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.view === view));
-    ['news','watchlist','portfolio','charts'].forEach(v => {
+    ['news','earnings','beta','watchlist','portfolio','charts'].forEach(v => {
         document.getElementById('view-' + v).style.display = (v === view) ? 'block' : 'none';
     });
     if (view === 'watchlist') { renderWatchlistTable(); renderWatchlistNews(); }
     if (view === 'portfolio') { renderPortfolioTable(); renderPortfolioNews(); }
     if (view === 'charts') { renderCharts(); }
+    if (view === 'earnings' && !earningsLoaded) { earningsLoaded = true; fetchEarnings(); }
+    if (view === 'beta' && !biotechLoaded) { biotechLoaded = true; fetchBiotech(); }
 }
 
 /* ---------- QUOTES / SCREENER ---------- */
@@ -409,16 +515,26 @@ async function refreshScreener() {
     if (currentView === 'watchlist') renderWatchlistTable();
     if (currentView === 'portfolio') renderPortfolioTable();
     if (currentView === 'charts') renderCharts();
+    if (currentView === 'news') filterNews();
+}
+
+function renderScreenerBar(tickers) {
+    const bar = document.getElementById('screenerBar');
+    bar.innerHTML = tickers.map(t => {
+        const q = quotes[t];
+        if (!q) return `<span class="screener-item"><span class="sym">${t}</span><span class="px">--</span></span>`;
+        const dir = q.d >= 0 ? 'up' : 'down';
+        const arrow = q.d >= 0 ? '▲' : '▼';
+        return `<span class="screener-item"><span class="sym">${t}</span><span class="px">$${q.c.toFixed(2)}</span><span class="${dir}">${arrow} ${q.d.toFixed(2)} (${q.dp.toFixed(2)}%)</span></span>`;
+    }).join('');
 }
 
 /* ---------- TRENDING TICKERS ---------- */
 function computeTrending() {
-    const allKnown = [...new Set([...nasdaqTickers, ...sp500Tickers, ...popularTickers])];
     const counts = {};
-
     allNews.filter(n => !n.isWatchlist).forEach(n => {
         const text = (n.headline || '') + ' ' + (n.summary || '');
-        allKnown.forEach(t => {
+        allKnownTickers.forEach(t => {
             const re = new RegExp(`\\b${t.replace('.', '\\.')}\\b`);
             if (re.test(text)) counts[t] = (counts[t] || 0) + 1;
         });
@@ -434,12 +550,10 @@ function computeTrending() {
         .sort((a, b) => b[1] - a[1])
         .map(([t]) => t);
 
-    // Fill remaining slots with well-known popular tickers if news mentions are sparse
     for (const t of popularTickers) {
         if (ranked.length >= 6) break;
         if (!ranked.includes(t) && !watchlist.includes(t)) ranked.push(t);
     }
-
     trendingTickers = ranked.slice(0, 6);
 }
 
@@ -453,12 +567,10 @@ async function renderTrendingBox() {
 
     const box = document.getElementById('trendingBox');
     if (!box) return;
-
     if (trendingTickers.length === 0) {
         box.innerHTML = `<h3>🔥 Trending Now</h3><div class="empty-note">No trending data yet.</div>`;
         return;
     }
-
     box.innerHTML = `
         <h3>🔥 Trending Now <span style="font-weight:normal;color:#6b7280;font-size:11px;">(mentioned frequently in today's news, or a popular ticker)</span></h3>
         <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">
@@ -485,15 +597,1012 @@ function addTrendingToWatchlist(ticker) {
     refreshScreener();
 }
 
-function renderScreenerBar(tickers) {
-    const bar = document.getElementById('screenerBar');
-    bar.innerHTML = tickers.map(t => {
+/* ---------- EARNINGS TAB ---------- */
+function getDateOffset(days) {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    return d.toISOString().split('T')[0];
+}
+
+async function fetchEarnings(forceRefresh) {
+    const body = document.getElementById('earningsTableBody');
+    const newsFeed = document.getElementById('earningsNewsFeed');
+    body.innerHTML = `<tr><td colspan="6" class="empty-note">Loading earnings calendar...</td></tr>`;
+    newsFeed.innerHTML = `<div class="empty-note">Loading...</div>`;
+
+    try {
+        const from = getDateOffset(0);
+        const to = getDateOffset(14);
+        const r = await fetch(`https://finnhub.io/api/v1/calendar/earnings?from=${from}&to=${to}&token=${API_KEY}`);
+        if (!r.ok) throw new Error('Failed to fetch earnings calendar');
+        const data = await r.json();
+        const cal = (data && data.earningsCalendar) ? data.earningsCalendar : [];
+
+        // Only show earnings for well-known/major companies, sorted by date
+        earningsList = cal
+            .filter(e => allKnownTickers.includes(e.symbol))
+            .sort((a, b) => a.date.localeCompare(b.date))
+            .slice(0, 20);
+
+        if (earningsList.length === 0) {
+            body.innerHTML = `<tr><td colspan="6" class="empty-note">No major earnings found in the next 14 days.</td></tr>`;
+            newsFeed.innerHTML = `<div class="empty-note">Nothing to show.</div>`;
+            return;
+        }
+
+        // Fetch quotes for these tickers
+        const tickers = [...new Set(earningsList.map(e => e.symbol))];
+        const missing = tickers.filter(t => !quotes[t]);
+        if (missing.length) {
+            const results = await Promise.all(missing.map(t => fetchQuote(t).then(q => [t, q])));
+            results.forEach(([t, q]) => { if (q) quotes[t] = q; });
+        }
+
+        renderEarningsTable();
+
+        // Fetch recent news for top 10 tickers with upcoming earnings
+        const topTickers = tickers.slice(0, 10);
+        const fromDate = getDateDaysAgo(5);
+        const toDate = getDateDaysAgo(0);
+        const promises = topTickers.map(ticker =>
+            fetch(`https://finnhub.io/api/v1/company-news?symbol=${ticker}&from=${fromDate}&to=${toDate}&token=${API_KEY}`)
+                .then(res => res.ok ? res.json() : [])
+                .then(arr => arr.slice(0, 5).map(item => ({ ...item, earningsTicker: ticker })))
+                .catch(() => [])
+        );
+        const arrays = await Promise.all(promises);
+        const combined = arrays.flat();
+
+        earningsNews = combined.map((item, index) => ({
+            id: `e-${index}`,
+            headline: item.headline || 'No headline',
+            summary: item.summary || 'Click to read more details...',
+            source: item.source || 'Financial News',
+            time: formatTime(item.datetime),
+            url: item.url || '#',
+            related: item.earningsTicker,
+            isWatchlist: false,
+            isEarningsRelated: true,
+            chipTickers: [{ ticker: item.earningsTicker, isSectorTop: false }]
+        }));
+
+        // Fetch any missing quotes for chip display
+        const chipMissing = [...new Set(earningsNews.map(n => n.related))].filter(t => !quotes[t]);
+        if (chipMissing.length) {
+            const results = await Promise.all(chipMissing.map(t => fetchQuote(t).then(q => [t, q])));
+            results.forEach(([t, q]) => { if (q) quotes[t] = q; });
+        }
+
+        renderEarningsNews();
+    } catch (e) {
+        console.error('fetchEarnings error', e);
+        body.innerHTML = `<tr><td colspan="6" class="empty-note">Unable to load earnings calendar right now.</td></tr>`;
+        newsFeed.innerHTML = `<div class="empty-note">Unable to load news.</div>`;
+    }
+}
+
+function renderEarningsTable() {
+    const body = document.getElementById('earningsTableBody');
+    const hourLabel = h => h === 'bmo' ? 'Before Open' : (h === 'amc' ? 'After Close' : (h || '--'));
+    body.innerHTML = earningsList.map(e => {
+        const q = quotes[e.symbol];
+        const price = q ? '
+
+/* ---------- WATCHLIST ---------- */
+function addToWatchlist() {
+    const input = document.getElementById('watchlistTickerInput');
+    const ticker = input.value.trim().toUpperCase();
+    if (!ticker) return;
+    if (watchlist.includes(ticker)) { input.value=''; return; }
+    if (watchlist.length >= 10) { alert('Maximum 10 tickers.'); return; }
+    watchlist.push(ticker);
+    input.value = '';
+    renderWatchlistTable();
+    fetchNews();
+    refreshScreener();
+}
+function removeFromWatchlist(ticker) {
+    watchlist = watchlist.filter(t => t !== ticker);
+    renderWatchlistTable();
+    fetchNews();
+    refreshScreener();
+}
+function renderWatchlistTable() {
+    const body = document.getElementById('watchlistTableBody');
+    if (watchlist.length === 0) {
+        body.innerHTML = `<tr><td colspan="5" class="empty-note">No tickers in your watchlist yet. Add one above.</td></tr>`;
+        return;
+    }
+    body.innerHTML = watchlist.map(t => {
         const q = quotes[t];
-        if (!q) return `<span class="screener-item"><span class="sym">${t}</span><span class="px">--</span></span>`;
-        const dir = q.d >= 0 ? 'up' : 'down';
-        const arrow = q.d >= 0 ? '▲' : '▼';
-        return `<span class="screener-item"><span class="sym">${t}</span><span class="px">$${q.c.toFixed(2)}</span><span class="${dir}">${arrow} ${q.d.toFixed(2)} (${q.dp.toFixed(2)}%)</span></span>`;
+        const price = q ? '$' + q.c.toFixed(2) : '--';
+        const change = q ? q.d.toFixed(2) : '--';
+        const pct = q ? q.dp.toFixed(2) + '%' : '--';
+        const dir = q && q.d >= 0 ? 'up' : (q ? 'down' : '');
+        return `<tr>
+            <td>${t}</td>
+            <td>${price}</td>
+            <td class="${dir}">${change}</td>
+            <td class="${dir}">${pct}</td>
+            <td><button class="rm-btn" onclick="removeFromWatchlist('${t}')">✕</button></td>
+        </tr>`;
     }).join('');
+}
+function renderWatchlistNews() {
+    const feed = document.getElementById('watchlistNewsFeed');
+    const items = allNews.filter(n => n.isWatchlist);
+    if (items.length === 0) {
+        feed.innerHTML = `<div class="empty-note">No watchlist-specific news loaded yet. Add tickers above, news will populate shortly.</div>`;
+        return;
+    }
+    feed.innerHTML = items.map(renderNewsRow).join('');
+}
+
+/* ---------- PORTFOLIO ---------- */
+function addToPortfolio() {
+    const ticker = document.getElementById('portTickerInput').value.trim().toUpperCase();
+    const shares = parseFloat(document.getElementById('portSharesInput').value);
+    const cost = parseFloat(document.getElementById('portCostInput').value);
+    if (!ticker || !shares || shares <= 0) { alert('Enter a ticker and share count.'); return; }
+    portfolio = portfolio.filter(p => p.ticker !== ticker);
+    portfolio.push({ ticker, shares, cost: isNaN(cost) ? null : cost });
+    document.getElementById('portTickerInput').value = '';
+    document.getElementById('portSharesInput').value = '';
+    document.getElementById('portCostInput').value = '';
+    renderPortfolioTable();
+    fetchNews();
+    refreshScreener();
+}
+function removeFromPortfolio(ticker) {
+    portfolio = portfolio.filter(p => p.ticker !== ticker);
+    renderPortfolioTable();
+    fetchNews();
+    refreshScreener();
+}
+function renderPortfolioTable() {
+    const body = document.getElementById('portfolioTableBody');
+    if (portfolio.length === 0) {
+        body.innerHTML = `<tr><td colspan="7" class="empty-note">No holdings added yet. Add one above.</td></tr>`;
+        return;
+    }
+    body.innerHTML = portfolio.map(p => {
+        const q = quotes[p.ticker];
+        const price = q ? q.c : null;
+        const mktValue = price ? (price * p.shares) : null;
+        let gl = '--', glClass = '';
+        if (price && p.cost) {
+            const glVal = (price - p.cost) * p.shares;
+            gl = (glVal >= 0 ? '+' : '') + '$' + glVal.toFixed(2);
+            glClass = glVal >= 0 ? 'up' : 'down';
+        }
+        return `<tr>
+            <td>${p.ticker}</td>
+            <td>${p.shares}</td>
+            <td>${p.cost ? '$' + p.cost.toFixed(2) : '--'}</td>
+            <td>${price ? '$' + price.toFixed(2) : '--'}</td>
+            <td>${mktValue ? '$' + mktValue.toFixed(2) : '--'}</td>
+            <td class="${glClass}">${gl}</td>
+            <td><button class="rm-btn" onclick="removeFromPortfolio('${p.ticker}')">✕</button></td>
+        </tr>`;
+    }).join('');
+}
+function renderPortfolioNews() {
+    const feed = document.getElementById('portfolioNewsFeed');
+    const tickers = portfolio.map(p => p.ticker);
+    const items = allNews.filter(n => n.isWatchlist && tickers.includes(n.related));
+    if (items.length === 0) {
+        feed.innerHTML = `<div class="empty-note">No portfolio-specific news loaded yet.</div>`;
+        return;
+    }
+    feed.innerHTML = items.map(renderNewsRow).join('');
+}
+
+/* ---------- CHARTS ---------- */
+function renderCharts() {
+    const container = document.getElementById('chartsContainer');
+    const tickers = [...new Set([...watchlist, ...portfolio.map(p => p.ticker)])];
+    if (tickers.length === 0) {
+        container.innerHTML = `<div class="empty-note">Add tickers to your watchlist or portfolio to see their charts here.</div>`;
+        return;
+    }
+    container.innerHTML = tickers.map(t => {
+        const q = quotes[t];
+        let rangeHtml = '<div class="empty-note">Loading quote data...</div>';
+        let headerPrice = '';
+        if (q) {
+            const low = q.l, high = q.h, cur = q.c, open = q.o;
+            const range = (high - low) || 1;
+            const curPct = ((cur - low) / range) * 100;
+            const openPct = ((open - low) / range) * 100;
+            const dir = q.d >= 0 ? 'up' : 'down';
+            headerPrice = `<span class="${dir}">$${cur.toFixed(2)} (${q.dp.toFixed(2)}%)</span>`;
+            rangeHtml = `
+                <div class="range-bar-track">
+                    <div class="range-bar-marker" style="left:${openPct}%; background:#6b7280;" title="Open"></div>
+                    <div class="range-bar-marker" style="left:${curPct}%; background:#3b82f6;" title="Current"></div>
+                </div>
+                <div class="range-labels"><span>Low $${low.toFixed(2)}</span><span>Open $${open.toFixed(2)}</span><span>High $${high.toFixed(2)}</span></div>`;
+        }
+        return `
+        <div class="range-card">
+            <div class="rtitle">
+                <span class="sym">${t}</span>
+                ${headerPrice}
+            </div>
+            <div class="chart-iframe-wrap">
+                <iframe src="https://www.tradingview.com/widgetembed/?symbol=${encodeURIComponent(t)}&interval=D&theme=dark&style=1&hide_top_toolbar=0&hide_legend=0&saveimage=0" scrolling="no" allowtransparency="true"></iframe>
+            </div>
+            ${rangeHtml}
+        </div>`;
+    }).join('');
+}
+
+/* ---------- NEWS FETCH ---------- */
+function getDateDaysAgo(days) {
+    const d = new Date();
+    d.setDate(d.getDate() - days);
+    return d.toISOString().split('T')[0];
+}
+function formatTime(timestamp) {
+    if (!timestamp) return 'Recently';
+    const date = new Date(timestamp * 1000);
+    const now = new Date();
+    const diffHours = Math.floor((now - date) / (1000*60*60));
+    const diffDays = Math.floor(diffHours/24);
+    if (diffHours < 1) return 'Less than 1 hour ago';
+    if (diffHours < 24) return `${diffHours} hour${diffHours>1?'s':''} ago`;
+    if (diffDays === 1) return '1 day ago';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString();
+}
+
+async function fetchNews() {
+    try {
+        const fromDate = getDateDaysAgo(5);
+        const toDate = getDateDaysAgo(0);
+        const generalPromise = fetch(`https://finnhub.io/api/v1/news?category=general&token=${API_KEY}`).then(r => r.ok ? r.json() : []);
+        const trackedTickers = [...new Set([...watchlist, ...portfolio.map(p => p.ticker)])];
+        const trackedPromises = trackedTickers.map(ticker =>
+            fetch(`https://finnhub.io/api/v1/company-news?symbol=${ticker}&from=${fromDate}&to=${toDate}&token=${API_KEY}`)
+                .then(r => r.ok ? r.json() : [])
+                .then(data => data.map(item => ({ ...item, watchlistTicker: ticker })))
+                .catch(() => [])
+        );
+        const [generalData, ...trackedArrays] = await Promise.all([generalPromise, ...trackedPromises]);
+        const trackedData = trackedArrays.flat();
+
+        if ((!generalData || generalData.length === 0) && trackedData.length === 0) return;
+
+        const watchlistNews = trackedData.slice(0, 30).map((item, index) => ({
+            id: `w-${index}`,
+            headline: item.headline || 'No headline',
+            summary: item.summary || 'Click to read more details...',
+            source: item.source || 'Financial News',
+            time: formatTime(item.datetime),
+            url: item.url || '#',
+            related: item.watchlistTicker,
+            isWatchlist: true,
+            isHighImpact: /earnings|merger|acquisition|beats|misses|billion|record|surge|plunge|guidance/i.test(item.headline + item.summary),
+            chipTickers: [{ ticker: item.watchlistTicker, isSectorTop: false }]
+        }));
+
+        const generalNews = (generalData || []).slice(0, 40).map((item, index) => {
+            const fullText = (item.headline||'') + ' ' + (item.summary||'');
+            const detectedTickers = detectTickersInText(fullText);
+            let chipTickers = [];
+            if (detectedTickers.length > 0) {
+                chipTickers = detectedTickers.map(t => ({ ticker: t, isSectorTop: false }));
+            } else {
+                const sector = detectSector(fullText);
+                if (sector) {
+                    chipTickers = sectorTickers[sector].map(t => ({ ticker: t, isSectorTop: true, sectorName: sector }));
+                }
+            }
+            return {
+                id: `g-${index}`,
+                headline: item.headline || 'No headline',
+                summary: item.summary || 'Click to read more details...',
+                source: item.source || 'Financial News',
+                time: formatTime(item.datetime),
+                url: item.url || '#',
+                related: item.related || '',
+                isWatchlist: false,
+                isMacro: isMacroNews(fullText),
+                isHighImpact: /earnings|merger|acquisition|beats|misses|billion|record|surge|plunge|fed|rate|guidance/i.test(fullText),
+                inNasdaq: matchesIndex(fullText, nasdaqTickers, nasdaqNames),
+                inSp500: matchesIndex(fullText, sp500Tickers, sp500Names),
+                chipTickers
+            };
+        });
+
+        allNews = [...watchlistNews, ...generalNews];
+        allNews.sort((a,b) => {
+            if (a.isWatchlist && !b.isWatchlist) return -1;
+            if (!a.isWatchlist && b.isWatchlist) return 1;
+            if (a.isMacro && !b.isMacro) return -1;
+            if (!a.isMacro && b.isMacro) return 1;
+            if (a.isHighImpact && !b.isHighImpact) return -1;
+            if (!a.isHighImpact && b.isHighImpact) return 1;
+            return 0;
+        });
+
+        // Fetch quotes for any chip tickers we don't have cached yet
+        const chipTickerSet = new Set();
+        allNews.forEach(n => (n.chipTickers||[]).forEach(c => chipTickerSet.add(c.ticker)));
+        const needed = [...chipTickerSet].filter(t => !quotes[t]);
+        if (needed.length) {
+            const results = await Promise.all(needed.map(t => fetchQuote(t).then(q => [t, q])));
+            results.forEach(([t, q]) => { if (q) quotes[t] = q; });
+        }
+
+        updateInsights();
+        await renderTrendingBox();
+        filterNews();
+        if (currentView === 'watchlist') renderWatchlistNews();
+        if (currentView === 'portfolio') renderPortfolioNews();
+    } catch (e) { console.error('fetchNews error', e); }
+}
+
+function updateInsights() {
+    const box = document.getElementById('insightsBox');
+    const total = allNews.length;
+    const sources = [...new Set(allNews.map(n => n.source))].length;
+    const wl = allNews.filter(n => n.isWatchlist).length;
+    const macro = allNews.filter(n => n.isMacro).length;
+    const hi = allNews.filter(n => n.isHighImpact).length;
+    box.innerHTML = `
+        <h3>Market Snapshot</h3>
+        <ul>
+            <li>${total} articles from ${sources} sources</li>
+            <li>${watchlist.length > 0 ? wl + ' stories about your watchlist: ' + watchlist.join(', ') : 'Add tickers to your watchlist to prioritize their news'}</li>
+            <li>${macro} government/macro/world stories that could move markets broadly</li>
+            <li>${hi} high-impact stories (earnings, M&amp;A, major guidance changes)</li>
+        </ul>`;
+}
+
+/* ---------- ANALYSIS ---------- */
+function generateAnalysis(headline, summary) {
+    const isPositive = /beat|exceed|surge|jump|gain|rise|growth|profit|success|increase|up|high|strong|positive|rally/i.test(headline+summary);
+    const isNegative = /miss|drop|fall|decline|loss|cut|reduce|lower|weak|concern|down|plunge|crash|negative/i.test(headline+summary);
+    const isEarnings = /earnings|revenue|profit|quarter|q[1-4]|fiscal|results/i.test(headline+summary);
+    const isMerger = /merger|acquisition|acquire|deal|purchase|buy|takeover/i.test(headline+summary);
+    let companyImpact, priceImpact, considerations;
+
+    if (isEarnings && isPositive) {
+        companyImpact = 'This earnings beat indicates the company exceeded analyst expectations, suggesting stronger-than-anticipated operational performance.';
+        priceImpact = 'Positive earnings historically correlate with upward price momentum:';
+        considerations = ['Average 2-5% price increase in the 5 days following positive earnings beats', 'Institutional buying often increases after positive news', 'Options markets typically price in 1-3% moves on earnings', 'Watch for "buy the rumor, sell the news" if expectations were already high'];
+    } else if (isEarnings && isNegative) {
+        companyImpact = 'This earnings miss suggests the company underperformed relative to analyst expectations.';
+        priceImpact = 'Negative earnings historically correlate with downward price pressure:';
+        considerations = ['Average 3-7% price decrease in the 5 days following earnings misses', 'Increased institutional selling pressure managing risk', 'Potential analyst downgrades and revised targets', 'Monitor key technical support levels'];
+    } else if (isMerger) {
+        companyImpact = 'M&A activity signals strategic expansion or consolidation, which can increase market share or create synergies, but carries integration risk.';
+        priceImpact = 'M&A announcements show varied price impacts:';
+        considerations = ['Acquirers often see 1-3% initial decline (premium concern)', 'Targets typically rise toward acquisition price', 'Success depends on integration execution', 'Monitor deal terms, financing, and regulatory approval timeline'];
+    } else {
+        companyImpact = 'This is a material market development. Impact depends on scale, sector context, and competitive positioning.';
+        priceImpact = 'Market reaction depends on multiple factors:';
+        considerations = ['Broader market sentiment and sector performance', 'Details in subsequent company communications', 'Analyst interpretations and revised forecasts', 'Overall market volatility and macro conditions'];
+    }
+    return { companyImpact, priceImpact, considerations };
+}
+
+function toggleAnalysis(id) {
+    const el = document.getElementById('analysis-' + id);
+    if (!el) return;
+    document.querySelectorAll('.analysis.open').forEach(a => { if (a.id !== 'analysis-'+id) a.classList.remove('open'); });
+    el.classList.toggle('open');
+}
+
+function renderChipRow(item) {
+    const chips = item.chipTickers || [];
+    if (chips.length === 0) return '';
+    const label = chips[0].isSectorTop ? `Top ${capitalize(chips[0].sectorName)} stocks:` : 'Related:';
+    return `<div class="chip-row"><span class="chip-label">${label}</span>${chips.map(c => {
+        const q = quotes[c.ticker];
+        const dir = q ? (q.d >= 0 ? 'up' : 'down') : '';
+        const priceStr = q ? `$${q.c.toFixed(2)} <span class="${dir}">${q.dp >= 0 ? '+' : ''}${q.dp.toFixed(2)}%</span>` : '--';
+        return `<span class="chip"><strong>${c.ticker}</strong>${priceStr}</span>`;
+    }).join('')}</div>`;
+}
+
+function renderNewsRow(item, extraTag) {
+    const a = generateAnalysis(item.headline, item.summary);
+    return `
+    <div class="news-row" onclick="toggleAnalysis('${item.id}')">
+        <div class="news-thumb">${item.source}</div>
+        <div class="news-body">
+            <div class="news-headline">
+                ${item.isWatchlist ? `<span class="tag watch">⭐ ${item.related}</span>` : ''}
+                ${extraTag === 'major' ? '<span class="tag major">EARNINGS SOON</span>' : ''}
+                ${extraTag === 'catalyst' ? '<span class="tag catalyst">POSSIBLE CATALYST</span>' : ''}
+                ${item.isHighImpact ? '<span class="tag impact">HIGH IMPACT</span>' : ''}
+                ${item.isMacro ? '<span class="tag macro">MACRO/GOV</span>' : ''}
+                ${item.inNasdaq ? '<span class="tag">NASDAQ</span>' : ''}
+                ${item.inSp500 ? '<span class="tag">S&amp;P 500</span>' : ''}
+                ${item.headline}
+            </div>
+            <div class="news-meta"><span class="src">${item.source}</span> · ${item.time}</div>
+            <div class="news-summary">${item.summary}</div>
+            ${renderChipRow(item)}
+            <div class="analysis" id="analysis-${item.id}">
+                <h4>1. Company Impact</h4>
+                <p>${a.companyImpact}</p>
+                <h4>2. Historical Price Impact Patterns</h4>
+                <p>${a.priceImpact}</p>
+                <ul>${a.considerations.map(c => `<li>${c}</li>`).join('')}</ul>
+                <h4>3. Objective Considerations</h4>
+                <p><strong>Monitor:</strong> trading volume, relative strength vs peers, options flow, analyst rating changes.</p>
+                <p><strong>Compare:</strong> current metrics to 5-year averages and sector benchmarks.</p>
+                <p><strong>Risk:</strong> consider position sizing, stop-loss levels, time horizon.</p>
+                <div class="disc">Educational purpose only — based on historical statistical patterns, not investment advice. Do your own research.</div>
+                <div style="margin-top:8px;"><a href="${item.url}" target="_blank" class="read-link" onclick="event.stopPropagation()">Read full article →</a></div>
+            </div>
+        </div>
+    </div>`;
+}
+
+function renderNews(items) {
+    const feed = document.getElementById('newsFeed');
+    if (items.length === 0) { feed.innerHTML = `<div class="empty-note">No news items found.</div>`; return; }
+    feed.innerHTML = items.map(renderNewsRow).join('');
+}
+
+function setIndexScope(scope) {
+    indexScope = scope;
+    document.querySelectorAll('#indexToggle button').forEach((btn,i) => {
+        const scopes = ['all','nasdaq','sp500'];
+        btn.classList.toggle('active', scopes[i] === scope);
+    });
+    filterNews();
+}
+
+function filterNews() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const sourceFilter = document.getElementById('sourceFilter').value;
+    const filtered = allNews.filter(item => {
+        const matchSource = sourceFilter === 'all' || item.source.toLowerCase().includes(sourceFilter.toLowerCase());
+        const matchSearch = !search || item.headline.toLowerCase().includes(search) || item.summary.toLowerCase().includes(search) || item.source.toLowerCase().includes(search) || (item.related && item.related.toLowerCase().includes(search));
+        let matchScope = true;
+        if (indexScope !== 'all' && !item.isWatchlist && !item.isMacro) {
+            matchScope = indexScope === 'nasdaq' ? !!item.inNasdaq : !!item.inSp500;
+        }
+        return matchSource && matchSearch && matchScope;
+    });
+    renderNews(filtered);
+}
+
+/* ---------- INITIAL DATA ---------- */
+const initialNews = [
+    { id:0, headline:'Tech Giants Report Strong Q4 Earnings, Market Rallies', summary:'Major technology companies exceeded Wall Street expectations with robust quarterly results.', source:'Bloomberg', time:'3 hours ago', url:'#', related:'AAPL, MSFT, GOOGL', isHighImpact:true, inNasdaq:true, inSp500:true, chipTickers:[{ticker:'AAPL',isSectorTop:false},{ticker:'MSFT',isSectorTop:false},{ticker:'GOOGL',isSectorTop:false}] },
+    { id:1, headline:'Federal Reserve Signals Cautious Approach to Rate Changes', summary:'Central bank officials indicate a measured stance on monetary policy adjustments.', source:'Reuters', time:'5 hours ago', url:'#', related:'SPY, DXY', isHighImpact:true, isMacro:true, chipTickers:[{ticker:'SPY',isSectorTop:false}] },
+    { id:2, headline:'Healthcare Sector Sees Major M&A Activity Surge', summary:'Pharma and biotech companies announce multiple M&A deals totaling billions.', source:'CNBC', time:'7 hours ago', url:'#', related:'JNJ, PFE, ABBV', isHighImpact:true, inSp500:true, chipTickers:[{ticker:'JNJ',isSectorTop:false},{ticker:'PFE',isSectorTop:false},{ticker:'ABBV',isSectorTop:false}] },
+    { id:3, headline:'Energy Prices Fluctuate on Global Supply Concerns', summary:'Oil and gas markets see volatility amid geopolitical tensions.', source:'Wall Street Journal', time:'9 hours ago', url:'#', related:'XOM, CVX', isHighImpact:true, isMacro:true, inSp500:true, chipTickers:[{ticker:'XOM',isSectorTop:false},{ticker:'CVX',isSectorTop:false}] },
+    { id:4, headline:'Consumer Spending Shows Resilience Despite Uncertainty', summary:'Retail sales data exceeds expectations, indicating strong consumer demand.', source:'Financial Times', time:'11 hours ago', url:'#', related:'WMT, TGT, AMZN', inNasdaq:true, inSp500:true, chipTickers:[{ticker:'WMT',isSectorTop:false},{ticker:'AMZN',isSectorTop:false}] },
+    { id:5, headline:'Semiconductor Stocks Rally on AI Chip Demand Forecast', summary:'Chipmakers see gains as analysts project continued strong AI processor demand.', source:'MarketWatch', time:'1 day ago', url:'#', related:'NVDA, AMD, INTC', isHighImpact:true, inNasdaq:true, inSp500:true, chipTickers:[{ticker:'NVDA',isSectorTop:false},{ticker:'AMD',isSectorTop:false}] },
+    { id:6, headline:'Banking Sector Profits Beat Estimates on Trading Revenue', summary:'Major banks report better-than-expected profits driven by trading divisions.', source:'Bloomberg', time:'1 day ago', url:'#', related:'JPM, BAC, GS', isHighImpact:true, inSp500:true, chipTickers:[{ticker:'JPM',isSectorTop:false},{ticker:'BAC',isSectorTop:false},{ticker:'GS',isSectorTop:false}] },
+    { id:7, headline:'Renewable Energy Investments Hit Record Levels', summary:'Global investment in renewables reaches all-time high.', source:'Reuters', time:'2 days ago', url:'#', related:'TSLA, ENPH, NEE', inNasdaq:true, inSp500:true, chipTickers:[{ticker:'TSLA',isSectorTop:false}] }
+];
+
+window.onload = () => {
+    allNews = initialNews;
+    updateInsights();
+    filterNews();
+    refreshScreener();
+    renderTrendingBox();
+    fetchNews();
+    setInterval(refreshScreener, 60000);
+};
+</script>
+</body>
+</html> + q.c.toFixed(2) : '--';
+        const isMajor = popularTickers.includes(e.symbol);
+        return `<tr>
+            <td>${e.symbol} ${isMajor ? '<span class="tag major">MAJOR</span>' : ''}</td>
+            <td>${e.date}</td>
+            <td>${hourLabel(e.hour)}</td>
+            <td>${e.quarter ? 'Q'+e.quarter : ''} ${e.year || ''}</td>
+            <td>${e.epsEstimate != null ? e.epsEstimate.toFixed(2) : '--'}</td>
+            <td>${price}</td>
+        </tr>`;
+    }).join('');
+}
+
+function renderEarningsNews() {
+    const feed = document.getElementById('earningsNewsFeed');
+    if (earningsNews.length === 0) {
+        feed.innerHTML = `<div class="empty-note">No recent news found for companies with upcoming earnings.</div>`;
+        return;
+    }
+    feed.innerHTML = earningsNews.map(item => renderNewsRow(item, 'major')).join('');
+}
+
+/* ---------- BETA (BIOTECH) TAB ---------- */
+const biotechTickers = ['MRNA','BNTX','VRTX','REGN','GILD','BIIB','AMGN','ILMN','IONS','SRPT','BMRN','ALNY','NBIX','EXEL','RARE','FOLD','ARWR','CRSP','NTLA','BEAM','VKTX','SAGE','PTCT','ACAD','HALO','RGNX'];
+const catalystKeywordRe = /phase (1|2|3|i|ii|iii)\b|topline|data readout|clinical trial|study results|\bfda\b|pdufa|breakthrough therapy|orphan drug|biologics license|new drug application|\bnda\b|\bbla\b|adcom|advisory committee|trial results|primary endpoint/i;
+
+async function fetchBiotech(forceRefresh) {
+    const body = document.getElementById('biotechTableBody');
+    const newsFeed = document.getElementById('biotechNewsFeed');
+    body.innerHTML = `<tr><td colspan="5" class="empty-note">Loading biotech quotes...</td></tr>`;
+    newsFeed.innerHTML = `<div class="empty-note">Loading...</div>`;
+
+    try {
+        const results = await Promise.all(biotechTickers.map(t => fetchQuote(t).then(q => [t, q])));
+        results.forEach(([t, q]) => { if (q) quotes[t] = q; });
+        renderBiotechTable();
+
+        // Scan news for a subset (avoid hammering rate limit) for catalyst language
+        const scanList = biotechTickers.slice(0, 14);
+        const fromDate = getDateDaysAgo(7);
+        const toDate = getDateDaysAgo(0);
+        const promises = scanList.map(ticker =>
+            fetch(`https://finnhub.io/api/v1/company-news?symbol=${ticker}&from=${fromDate}&to=${toDate}&token=${API_KEY}`)
+                .then(res => res.ok ? res.json() : [])
+                .then(arr => arr.map(item => ({ ...item, biotechTicker: ticker })))
+                .catch(() => [])
+        );
+        const arrays = await Promise.all(promises);
+        const combined = arrays.flat();
+
+        const flagged = combined.filter(item => catalystKeywordRe.test((item.headline||'') + ' ' + (item.summary||'')));
+
+        biotechNews = flagged.slice(0, 25).map((item, index) => ({
+            id: `b-${index}`,
+            headline: item.headline || 'No headline',
+            summary: item.summary || 'Click to read more details...',
+            source: item.source || 'Financial News',
+            time: formatTime(item.datetime),
+            url: item.url || '#',
+            related: item.biotechTicker,
+            isWatchlist: false,
+            isCatalyst: true,
+            chipTickers: [{ ticker: item.biotechTicker, isSectorTop: false }]
+        }));
+
+        renderBiotechNews();
+    } catch (e) {
+        console.error('fetchBiotech error', e);
+        body.innerHTML = `<tr><td colspan="5" class="empty-note">Unable to load biotech data right now.</td></tr>`;
+        newsFeed.innerHTML = `<div class="empty-note">Unable to load news.</div>`;
+    }
+}
+
+function renderBiotechTable() {
+    const body = document.getElementById('biotechTableBody');
+    body.innerHTML = biotechTickers.map(t => {
+        const q = quotes[t];
+        const price = q ? '
+
+/* ---------- WATCHLIST ---------- */
+function addToWatchlist() {
+    const input = document.getElementById('watchlistTickerInput');
+    const ticker = input.value.trim().toUpperCase();
+    if (!ticker) return;
+    if (watchlist.includes(ticker)) { input.value=''; return; }
+    if (watchlist.length >= 10) { alert('Maximum 10 tickers.'); return; }
+    watchlist.push(ticker);
+    input.value = '';
+    renderWatchlistTable();
+    fetchNews();
+    refreshScreener();
+}
+function removeFromWatchlist(ticker) {
+    watchlist = watchlist.filter(t => t !== ticker);
+    renderWatchlistTable();
+    fetchNews();
+    refreshScreener();
+}
+function renderWatchlistTable() {
+    const body = document.getElementById('watchlistTableBody');
+    if (watchlist.length === 0) {
+        body.innerHTML = `<tr><td colspan="5" class="empty-note">No tickers in your watchlist yet. Add one above.</td></tr>`;
+        return;
+    }
+    body.innerHTML = watchlist.map(t => {
+        const q = quotes[t];
+        const price = q ? '$' + q.c.toFixed(2) : '--';
+        const change = q ? q.d.toFixed(2) : '--';
+        const pct = q ? q.dp.toFixed(2) + '%' : '--';
+        const dir = q && q.d >= 0 ? 'up' : (q ? 'down' : '');
+        return `<tr>
+            <td>${t}</td>
+            <td>${price}</td>
+            <td class="${dir}">${change}</td>
+            <td class="${dir}">${pct}</td>
+            <td><button class="rm-btn" onclick="removeFromWatchlist('${t}')">✕</button></td>
+        </tr>`;
+    }).join('');
+}
+function renderWatchlistNews() {
+    const feed = document.getElementById('watchlistNewsFeed');
+    const items = allNews.filter(n => n.isWatchlist);
+    if (items.length === 0) {
+        feed.innerHTML = `<div class="empty-note">No watchlist-specific news loaded yet. Add tickers above, news will populate shortly.</div>`;
+        return;
+    }
+    feed.innerHTML = items.map(renderNewsRow).join('');
+}
+
+/* ---------- PORTFOLIO ---------- */
+function addToPortfolio() {
+    const ticker = document.getElementById('portTickerInput').value.trim().toUpperCase();
+    const shares = parseFloat(document.getElementById('portSharesInput').value);
+    const cost = parseFloat(document.getElementById('portCostInput').value);
+    if (!ticker || !shares || shares <= 0) { alert('Enter a ticker and share count.'); return; }
+    portfolio = portfolio.filter(p => p.ticker !== ticker);
+    portfolio.push({ ticker, shares, cost: isNaN(cost) ? null : cost });
+    document.getElementById('portTickerInput').value = '';
+    document.getElementById('portSharesInput').value = '';
+    document.getElementById('portCostInput').value = '';
+    renderPortfolioTable();
+    fetchNews();
+    refreshScreener();
+}
+function removeFromPortfolio(ticker) {
+    portfolio = portfolio.filter(p => p.ticker !== ticker);
+    renderPortfolioTable();
+    fetchNews();
+    refreshScreener();
+}
+function renderPortfolioTable() {
+    const body = document.getElementById('portfolioTableBody');
+    if (portfolio.length === 0) {
+        body.innerHTML = `<tr><td colspan="7" class="empty-note">No holdings added yet. Add one above.</td></tr>`;
+        return;
+    }
+    body.innerHTML = portfolio.map(p => {
+        const q = quotes[p.ticker];
+        const price = q ? q.c : null;
+        const mktValue = price ? (price * p.shares) : null;
+        let gl = '--', glClass = '';
+        if (price && p.cost) {
+            const glVal = (price - p.cost) * p.shares;
+            gl = (glVal >= 0 ? '+' : '') + '$' + glVal.toFixed(2);
+            glClass = glVal >= 0 ? 'up' : 'down';
+        }
+        return `<tr>
+            <td>${p.ticker}</td>
+            <td>${p.shares}</td>
+            <td>${p.cost ? '$' + p.cost.toFixed(2) : '--'}</td>
+            <td>${price ? '$' + price.toFixed(2) : '--'}</td>
+            <td>${mktValue ? '$' + mktValue.toFixed(2) : '--'}</td>
+            <td class="${glClass}">${gl}</td>
+            <td><button class="rm-btn" onclick="removeFromPortfolio('${p.ticker}')">✕</button></td>
+        </tr>`;
+    }).join('');
+}
+function renderPortfolioNews() {
+    const feed = document.getElementById('portfolioNewsFeed');
+    const tickers = portfolio.map(p => p.ticker);
+    const items = allNews.filter(n => n.isWatchlist && tickers.includes(n.related));
+    if (items.length === 0) {
+        feed.innerHTML = `<div class="empty-note">No portfolio-specific news loaded yet.</div>`;
+        return;
+    }
+    feed.innerHTML = items.map(renderNewsRow).join('');
+}
+
+/* ---------- CHARTS ---------- */
+function renderCharts() {
+    const container = document.getElementById('chartsContainer');
+    const tickers = [...new Set([...watchlist, ...portfolio.map(p => p.ticker)])];
+    if (tickers.length === 0) {
+        container.innerHTML = `<div class="empty-note">Add tickers to your watchlist or portfolio to see their charts here.</div>`;
+        return;
+    }
+    container.innerHTML = tickers.map(t => {
+        const q = quotes[t];
+        let rangeHtml = '<div class="empty-note">Loading quote data...</div>';
+        let headerPrice = '';
+        if (q) {
+            const low = q.l, high = q.h, cur = q.c, open = q.o;
+            const range = (high - low) || 1;
+            const curPct = ((cur - low) / range) * 100;
+            const openPct = ((open - low) / range) * 100;
+            const dir = q.d >= 0 ? 'up' : 'down';
+            headerPrice = `<span class="${dir}">$${cur.toFixed(2)} (${q.dp.toFixed(2)}%)</span>`;
+            rangeHtml = `
+                <div class="range-bar-track">
+                    <div class="range-bar-marker" style="left:${openPct}%; background:#6b7280;" title="Open"></div>
+                    <div class="range-bar-marker" style="left:${curPct}%; background:#3b82f6;" title="Current"></div>
+                </div>
+                <div class="range-labels"><span>Low $${low.toFixed(2)}</span><span>Open $${open.toFixed(2)}</span><span>High $${high.toFixed(2)}</span></div>`;
+        }
+        return `
+        <div class="range-card">
+            <div class="rtitle">
+                <span class="sym">${t}</span>
+                ${headerPrice}
+            </div>
+            <div class="chart-iframe-wrap">
+                <iframe src="https://www.tradingview.com/widgetembed/?symbol=${encodeURIComponent(t)}&interval=D&theme=dark&style=1&hide_top_toolbar=0&hide_legend=0&saveimage=0" scrolling="no" allowtransparency="true"></iframe>
+            </div>
+            ${rangeHtml}
+        </div>`;
+    }).join('');
+}
+
+/* ---------- NEWS FETCH ---------- */
+function getDateDaysAgo(days) {
+    const d = new Date();
+    d.setDate(d.getDate() - days);
+    return d.toISOString().split('T')[0];
+}
+function formatTime(timestamp) {
+    if (!timestamp) return 'Recently';
+    const date = new Date(timestamp * 1000);
+    const now = new Date();
+    const diffHours = Math.floor((now - date) / (1000*60*60));
+    const diffDays = Math.floor(diffHours/24);
+    if (diffHours < 1) return 'Less than 1 hour ago';
+    if (diffHours < 24) return `${diffHours} hour${diffHours>1?'s':''} ago`;
+    if (diffDays === 1) return '1 day ago';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString();
+}
+
+async function fetchNews() {
+    try {
+        const fromDate = getDateDaysAgo(5);
+        const toDate = getDateDaysAgo(0);
+        const generalPromise = fetch(`https://finnhub.io/api/v1/news?category=general&token=${API_KEY}`).then(r => r.ok ? r.json() : []);
+        const trackedTickers = [...new Set([...watchlist, ...portfolio.map(p => p.ticker)])];
+        const trackedPromises = trackedTickers.map(ticker =>
+            fetch(`https://finnhub.io/api/v1/company-news?symbol=${ticker}&from=${fromDate}&to=${toDate}&token=${API_KEY}`)
+                .then(r => r.ok ? r.json() : [])
+                .then(data => data.map(item => ({ ...item, watchlistTicker: ticker })))
+                .catch(() => [])
+        );
+        const [generalData, ...trackedArrays] = await Promise.all([generalPromise, ...trackedPromises]);
+        const trackedData = trackedArrays.flat();
+
+        if ((!generalData || generalData.length === 0) && trackedData.length === 0) return;
+
+        const watchlistNews = trackedData.slice(0, 30).map((item, index) => ({
+            id: `w-${index}`,
+            headline: item.headline || 'No headline',
+            summary: item.summary || 'Click to read more details...',
+            source: item.source || 'Financial News',
+            time: formatTime(item.datetime),
+            url: item.url || '#',
+            related: item.watchlistTicker,
+            isWatchlist: true,
+            isHighImpact: /earnings|merger|acquisition|beats|misses|billion|record|surge|plunge|guidance/i.test(item.headline + item.summary),
+            chipTickers: [{ ticker: item.watchlistTicker, isSectorTop: false }]
+        }));
+
+        const generalNews = (generalData || []).slice(0, 40).map((item, index) => {
+            const fullText = (item.headline||'') + ' ' + (item.summary||'');
+            const detectedTickers = detectTickersInText(fullText);
+            let chipTickers = [];
+            if (detectedTickers.length > 0) {
+                chipTickers = detectedTickers.map(t => ({ ticker: t, isSectorTop: false }));
+            } else {
+                const sector = detectSector(fullText);
+                if (sector) {
+                    chipTickers = sectorTickers[sector].map(t => ({ ticker: t, isSectorTop: true, sectorName: sector }));
+                }
+            }
+            return {
+                id: `g-${index}`,
+                headline: item.headline || 'No headline',
+                summary: item.summary || 'Click to read more details...',
+                source: item.source || 'Financial News',
+                time: formatTime(item.datetime),
+                url: item.url || '#',
+                related: item.related || '',
+                isWatchlist: false,
+                isMacro: isMacroNews(fullText),
+                isHighImpact: /earnings|merger|acquisition|beats|misses|billion|record|surge|plunge|fed|rate|guidance/i.test(fullText),
+                inNasdaq: matchesIndex(fullText, nasdaqTickers, nasdaqNames),
+                inSp500: matchesIndex(fullText, sp500Tickers, sp500Names),
+                chipTickers
+            };
+        });
+
+        allNews = [...watchlistNews, ...generalNews];
+        allNews.sort((a,b) => {
+            if (a.isWatchlist && !b.isWatchlist) return -1;
+            if (!a.isWatchlist && b.isWatchlist) return 1;
+            if (a.isMacro && !b.isMacro) return -1;
+            if (!a.isMacro && b.isMacro) return 1;
+            if (a.isHighImpact && !b.isHighImpact) return -1;
+            if (!a.isHighImpact && b.isHighImpact) return 1;
+            return 0;
+        });
+
+        // Fetch quotes for any chip tickers we don't have cached yet
+        const chipTickerSet = new Set();
+        allNews.forEach(n => (n.chipTickers||[]).forEach(c => chipTickerSet.add(c.ticker)));
+        const needed = [...chipTickerSet].filter(t => !quotes[t]);
+        if (needed.length) {
+            const results = await Promise.all(needed.map(t => fetchQuote(t).then(q => [t, q])));
+            results.forEach(([t, q]) => { if (q) quotes[t] = q; });
+        }
+
+        updateInsights();
+        await renderTrendingBox();
+        filterNews();
+        if (currentView === 'watchlist') renderWatchlistNews();
+        if (currentView === 'portfolio') renderPortfolioNews();
+    } catch (e) { console.error('fetchNews error', e); }
+}
+
+function updateInsights() {
+    const box = document.getElementById('insightsBox');
+    const total = allNews.length;
+    const sources = [...new Set(allNews.map(n => n.source))].length;
+    const wl = allNews.filter(n => n.isWatchlist).length;
+    const macro = allNews.filter(n => n.isMacro).length;
+    const hi = allNews.filter(n => n.isHighImpact).length;
+    box.innerHTML = `
+        <h3>Market Snapshot</h3>
+        <ul>
+            <li>${total} articles from ${sources} sources</li>
+            <li>${watchlist.length > 0 ? wl + ' stories about your watchlist: ' + watchlist.join(', ') : 'Add tickers to your watchlist to prioritize their news'}</li>
+            <li>${macro} government/macro/world stories that could move markets broadly</li>
+            <li>${hi} high-impact stories (earnings, M&amp;A, major guidance changes)</li>
+        </ul>`;
+}
+
+/* ---------- ANALYSIS ---------- */
+function generateAnalysis(headline, summary) {
+    const isPositive = /beat|exceed|surge|jump|gain|rise|growth|profit|success|increase|up|high|strong|positive|rally/i.test(headline+summary);
+    const isNegative = /miss|drop|fall|decline|loss|cut|reduce|lower|weak|concern|down|plunge|crash|negative/i.test(headline+summary);
+    const isEarnings = /earnings|revenue|profit|quarter|q[1-4]|fiscal|results/i.test(headline+summary);
+    const isMerger = /merger|acquisition|acquire|deal|purchase|buy|takeover/i.test(headline+summary);
+    let companyImpact, priceImpact, considerations;
+
+    if (isEarnings && isPositive) {
+        companyImpact = 'This earnings beat indicates the company exceeded analyst expectations, suggesting stronger-than-anticipated operational performance.';
+        priceImpact = 'Positive earnings historically correlate with upward price momentum:';
+        considerations = ['Average 2-5% price increase in the 5 days following positive earnings beats', 'Institutional buying often increases after positive news', 'Options markets typically price in 1-3% moves on earnings', 'Watch for "buy the rumor, sell the news" if expectations were already high'];
+    } else if (isEarnings && isNegative) {
+        companyImpact = 'This earnings miss suggests the company underperformed relative to analyst expectations.';
+        priceImpact = 'Negative earnings historically correlate with downward price pressure:';
+        considerations = ['Average 3-7% price decrease in the 5 days following earnings misses', 'Increased institutional selling pressure managing risk', 'Potential analyst downgrades and revised targets', 'Monitor key technical support levels'];
+    } else if (isMerger) {
+        companyImpact = 'M&A activity signals strategic expansion or consolidation, which can increase market share or create synergies, but carries integration risk.';
+        priceImpact = 'M&A announcements show varied price impacts:';
+        considerations = ['Acquirers often see 1-3% initial decline (premium concern)', 'Targets typically rise toward acquisition price', 'Success depends on integration execution', 'Monitor deal terms, financing, and regulatory approval timeline'];
+    } else {
+        companyImpact = 'This is a material market development. Impact depends on scale, sector context, and competitive positioning.';
+        priceImpact = 'Market reaction depends on multiple factors:';
+        considerations = ['Broader market sentiment and sector performance', 'Details in subsequent company communications', 'Analyst interpretations and revised forecasts', 'Overall market volatility and macro conditions'];
+    }
+    return { companyImpact, priceImpact, considerations };
+}
+
+function toggleAnalysis(id) {
+    const el = document.getElementById('analysis-' + id);
+    if (!el) return;
+    document.querySelectorAll('.analysis.open').forEach(a => { if (a.id !== 'analysis-'+id) a.classList.remove('open'); });
+    el.classList.toggle('open');
+}
+
+function renderChipRow(item) {
+    const chips = item.chipTickers || [];
+    if (chips.length === 0) return '';
+    const label = chips[0].isSectorTop ? `Top ${capitalize(chips[0].sectorName)} stocks:` : 'Related:';
+    return `<div class="chip-row"><span class="chip-label">${label}</span>${chips.map(c => {
+        const q = quotes[c.ticker];
+        const dir = q ? (q.d >= 0 ? 'up' : 'down') : '';
+        const priceStr = q ? `$${q.c.toFixed(2)} <span class="${dir}">${q.dp >= 0 ? '+' : ''}${q.dp.toFixed(2)}%</span>` : '--';
+        return `<span class="chip"><strong>${c.ticker}</strong>${priceStr}</span>`;
+    }).join('')}</div>`;
+}
+
+function renderNewsRow(item) {
+    const a = generateAnalysis(item.headline, item.summary);
+    return `
+    <div class="news-row" onclick="toggleAnalysis('${item.id}')">
+        <div class="news-thumb">${item.source}</div>
+        <div class="news-body">
+            <div class="news-headline">
+                ${item.isWatchlist ? `<span class="tag watch">⭐ ${item.related}</span>` : ''}
+                ${item.isHighImpact ? '<span class="tag impact">HIGH IMPACT</span>' : ''}
+                ${item.isMacro ? '<span class="tag macro">MACRO/GOV</span>' : ''}
+                ${item.inNasdaq ? '<span class="tag">NASDAQ</span>' : ''}
+                ${item.inSp500 ? '<span class="tag">S&amp;P 500</span>' : ''}
+                ${item.headline}
+            </div>
+            <div class="news-meta"><span class="src">${item.source}</span> · ${item.time}</div>
+            <div class="news-summary">${item.summary}</div>
+            ${renderChipRow(item)}
+            <div class="analysis" id="analysis-${item.id}">
+                <h4>1. Company Impact</h4>
+                <p>${a.companyImpact}</p>
+                <h4>2. Historical Price Impact Patterns</h4>
+                <p>${a.priceImpact}</p>
+                <ul>${a.considerations.map(c => `<li>${c}</li>`).join('')}</ul>
+                <h4>3. Objective Considerations</h4>
+                <p><strong>Monitor:</strong> trading volume, relative strength vs peers, options flow, analyst rating changes.</p>
+                <p><strong>Compare:</strong> current metrics to 5-year averages and sector benchmarks.</p>
+                <p><strong>Risk:</strong> consider position sizing, stop-loss levels, time horizon.</p>
+                <div class="disc">Educational purpose only — based on historical statistical patterns, not investment advice. Do your own research.</div>
+                <div style="margin-top:8px;"><a href="${item.url}" target="_blank" class="read-link" onclick="event.stopPropagation()">Read full article →</a></div>
+            </div>
+        </div>
+    </div>`;
+}
+
+function renderNews(items) {
+    const feed = document.getElementById('newsFeed');
+    if (items.length === 0) { feed.innerHTML = `<div class="empty-note">No news items found.</div>`; return; }
+    feed.innerHTML = items.map(renderNewsRow).join('');
+}
+
+function setIndexScope(scope) {
+    indexScope = scope;
+    document.querySelectorAll('#indexToggle button').forEach((btn,i) => {
+        const scopes = ['all','nasdaq','sp500'];
+        btn.classList.toggle('active', scopes[i] === scope);
+    });
+    filterNews();
+}
+
+function filterNews() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const sourceFilter = document.getElementById('sourceFilter').value;
+    const filtered = allNews.filter(item => {
+        const matchSource = sourceFilter === 'all' || item.source.toLowerCase().includes(sourceFilter.toLowerCase());
+        const matchSearch = !search || item.headline.toLowerCase().includes(search) || item.summary.toLowerCase().includes(search) || item.source.toLowerCase().includes(search) || (item.related && item.related.toLowerCase().includes(search));
+        let matchScope = true;
+        if (indexScope !== 'all' && !item.isWatchlist && !item.isMacro) {
+            matchScope = indexScope === 'nasdaq' ? !!item.inNasdaq : !!item.inSp500;
+        }
+        return matchSource && matchSearch && matchScope;
+    });
+    renderNews(filtered);
+}
+
+/* ---------- INITIAL DATA ---------- */
+const initialNews = [
+    { id:0, headline:'Tech Giants Report Strong Q4 Earnings, Market Rallies', summary:'Major technology companies exceeded Wall Street expectations with robust quarterly results.', source:'Bloomberg', time:'3 hours ago', url:'#', related:'AAPL, MSFT, GOOGL', isHighImpact:true, inNasdaq:true, inSp500:true, chipTickers:[{ticker:'AAPL',isSectorTop:false},{ticker:'MSFT',isSectorTop:false},{ticker:'GOOGL',isSectorTop:false}] },
+    { id:1, headline:'Federal Reserve Signals Cautious Approach to Rate Changes', summary:'Central bank officials indicate a measured stance on monetary policy adjustments.', source:'Reuters', time:'5 hours ago', url:'#', related:'SPY, DXY', isHighImpact:true, isMacro:true, chipTickers:[{ticker:'SPY',isSectorTop:false}] },
+    { id:2, headline:'Healthcare Sector Sees Major M&A Activity Surge', summary:'Pharma and biotech companies announce multiple M&A deals totaling billions.', source:'CNBC', time:'7 hours ago', url:'#', related:'JNJ, PFE, ABBV', isHighImpact:true, inSp500:true, chipTickers:[{ticker:'JNJ',isSectorTop:false},{ticker:'PFE',isSectorTop:false},{ticker:'ABBV',isSectorTop:false}] },
+    { id:3, headline:'Energy Prices Fluctuate on Global Supply Concerns', summary:'Oil and gas markets see volatility amid geopolitical tensions.', source:'Wall Street Journal', time:'9 hours ago', url:'#', related:'XOM, CVX', isHighImpact:true, isMacro:true, inSp500:true, chipTickers:[{ticker:'XOM',isSectorTop:false},{ticker:'CVX',isSectorTop:false}] },
+    { id:4, headline:'Consumer Spending Shows Resilience Despite Uncertainty', summary:'Retail sales data exceeds expectations, indicating strong consumer demand.', source:'Financial Times', time:'11 hours ago', url:'#', related:'WMT, TGT, AMZN', inNasdaq:true, inSp500:true, chipTickers:[{ticker:'WMT',isSectorTop:false},{ticker:'AMZN',isSectorTop:false}] },
+    { id:5, headline:'Semiconductor Stocks Rally on AI Chip Demand Forecast', summary:'Chipmakers see gains as analysts project continued strong AI processor demand.', source:'MarketWatch', time:'1 day ago', url:'#', related:'NVDA, AMD, INTC', isHighImpact:true, inNasdaq:true, inSp500:true, chipTickers:[{ticker:'NVDA',isSectorTop:false},{ticker:'AMD',isSectorTop:false}] },
+    { id:6, headline:'Banking Sector Profits Beat Estimates on Trading Revenue', summary:'Major banks report better-than-expected profits driven by trading divisions.', source:'Bloomberg', time:'1 day ago', url:'#', related:'JPM, BAC, GS', isHighImpact:true, inSp500:true, chipTickers:[{ticker:'JPM',isSectorTop:false},{ticker:'BAC',isSectorTop:false},{ticker:'GS',isSectorTop:false}] },
+    { id:7, headline:'Renewable Energy Investments Hit Record Levels', summary:'Global investment in renewables reaches all-time high.', source:'Reuters', time:'2 days ago', url:'#', related:'TSLA, ENPH, NEE', inNasdaq:true, inSp500:true, chipTickers:[{ticker:'TSLA',isSectorTop:false}] }
+];
+
+window.onload = () => {
+    allNews = initialNews;
+    updateInsights();
+    filterNews();
+    refreshScreener();
+    renderTrendingBox();
+    fetchNews();
+    setInterval(refreshScreener, 60000);
+};
+</script>
+</body>
+</html> + q.c.toFixed(2) : '--';
+        const change = q ? q.d.toFixed(2) : '--';
+        const pct = q ? q.dp.toFixed(2) + '%' : '--';
+        const dir = q && q.d >= 0 ? 'up' : (q ? 'down' : '');
+        const inWatch = watchlist.includes(t);
+        return `<tr>
+            <td>${t}</td>
+            <td>${price}</td>
+            <td class="${dir}">${change}</td>
+            <td class="${dir}">${pct}</td>
+            <td>${inWatch ? '<span class="tag watch">WATCHING</span>' : `<button class="rm-btn" style="border:1px solid #2a2f36;padding:2px 8px;" onclick="addTrendingToWatchlist('${t}')">+ Watch</button>`}</td>
+        </tr>`;
+    }).join('');
+}
+
+function renderBiotechNews() {
+    const feed = document.getElementById('biotechNewsFeed');
+    if (biotechNews.length === 0) {
+        feed.innerHTML = `<div class="empty-note">No recent trial/regulatory language detected in the scanned tickers this week.</div>`;
+        return;
+    }
+    feed.innerHTML = biotechNews.map(item => renderNewsRow(item, 'catalyst')).join('');
 }
 
 /* ---------- WATCHLIST ---------- */
@@ -605,7 +1714,7 @@ function renderPortfolioNews() {
     feed.innerHTML = items.map(renderNewsRow).join('');
 }
 
-/* ---------- CHARTS (real TradingView charts + day range from live quotes) ---------- */
+/* ---------- CHARTS ---------- */
 function renderCharts() {
     const container = document.getElementById('chartsContainer');
     const tickers = [...new Set([...watchlist, ...portfolio.map(p => p.ticker)])];
@@ -690,11 +1799,22 @@ async function fetchNews() {
             url: item.url || '#',
             related: item.watchlistTicker,
             isWatchlist: true,
-            isHighImpact: /earnings|merger|acquisition|beats|misses|billion|record|surge|plunge|guidance/i.test(item.headline + item.summary)
+            isHighImpact: /earnings|merger|acquisition|beats|misses|billion|record|surge|plunge|guidance/i.test(item.headline + item.summary),
+            chipTickers: [{ ticker: item.watchlistTicker, isSectorTop: false }]
         }));
 
         const generalNews = (generalData || []).slice(0, 40).map((item, index) => {
             const fullText = (item.headline||'') + ' ' + (item.summary||'');
+            const detectedTickers = detectTickersInText(fullText);
+            let chipTickers = [];
+            if (detectedTickers.length > 0) {
+                chipTickers = detectedTickers.map(t => ({ ticker: t, isSectorTop: false }));
+            } else {
+                const sector = detectSector(fullText);
+                if (sector) {
+                    chipTickers = sectorTickers[sector].map(t => ({ ticker: t, isSectorTop: true, sectorName: sector }));
+                }
+            }
             return {
                 id: `g-${index}`,
                 headline: item.headline || 'No headline',
@@ -707,7 +1827,8 @@ async function fetchNews() {
                 isMacro: isMacroNews(fullText),
                 isHighImpact: /earnings|merger|acquisition|beats|misses|billion|record|surge|plunge|fed|rate|guidance/i.test(fullText),
                 inNasdaq: matchesIndex(fullText, nasdaqTickers, nasdaqNames),
-                inSp500: matchesIndex(fullText, sp500Tickers, sp500Names)
+                inSp500: matchesIndex(fullText, sp500Tickers, sp500Names),
+                chipTickers
             };
         });
 
@@ -722,7 +1843,17 @@ async function fetchNews() {
             return 0;
         });
 
+        // Fetch quotes for any chip tickers we don't have cached yet
+        const chipTickerSet = new Set();
+        allNews.forEach(n => (n.chipTickers||[]).forEach(c => chipTickerSet.add(c.ticker)));
+        const needed = [...chipTickerSet].filter(t => !quotes[t]);
+        if (needed.length) {
+            const results = await Promise.all(needed.map(t => fetchQuote(t).then(q => [t, q])));
+            results.forEach(([t, q]) => { if (q) quotes[t] = q; });
+        }
+
         updateInsights();
+        await renderTrendingBox();
         filterNews();
         if (currentView === 'watchlist') renderWatchlistNews();
         if (currentView === 'portfolio') renderPortfolioNews();
@@ -781,6 +1912,18 @@ function toggleAnalysis(id) {
     el.classList.toggle('open');
 }
 
+function renderChipRow(item) {
+    const chips = item.chipTickers || [];
+    if (chips.length === 0) return '';
+    const label = chips[0].isSectorTop ? `Top ${capitalize(chips[0].sectorName)} stocks:` : 'Related:';
+    return `<div class="chip-row"><span class="chip-label">${label}</span>${chips.map(c => {
+        const q = quotes[c.ticker];
+        const dir = q ? (q.d >= 0 ? 'up' : 'down') : '';
+        const priceStr = q ? `$${q.c.toFixed(2)} <span class="${dir}">${q.dp >= 0 ? '+' : ''}${q.dp.toFixed(2)}%</span>` : '--';
+        return `<span class="chip"><strong>${c.ticker}</strong>${priceStr}</span>`;
+    }).join('')}</div>`;
+}
+
 function renderNewsRow(item) {
     const a = generateAnalysis(item.headline, item.summary);
     return `
@@ -797,6 +1940,7 @@ function renderNewsRow(item) {
             </div>
             <div class="news-meta"><span class="src">${item.source}</span> · ${item.time}</div>
             <div class="news-summary">${item.summary}</div>
+            ${renderChipRow(item)}
             <div class="analysis" id="analysis-${item.id}">
                 <h4>1. Company Impact</h4>
                 <p>${a.companyImpact}</p>
@@ -846,14 +1990,14 @@ function filterNews() {
 
 /* ---------- INITIAL DATA ---------- */
 const initialNews = [
-    { id:0, headline:'Tech Giants Report Strong Q4 Earnings, Market Rallies', summary:'Major technology companies exceeded Wall Street expectations with robust quarterly results.', source:'Bloomberg', time:'3 hours ago', url:'#', related:'AAPL, MSFT, GOOGL', isHighImpact:true, inNasdaq:true, inSp500:true },
-    { id:1, headline:'Federal Reserve Signals Cautious Approach to Rate Changes', summary:'Central bank officials indicate a measured stance on monetary policy adjustments.', source:'Reuters', time:'5 hours ago', url:'#', related:'SPY, DXY', isHighImpact:true, isMacro:true },
-    { id:2, headline:'Healthcare Sector Sees Major M&A Activity Surge', summary:'Pharma and biotech companies announce multiple M&A deals totaling billions.', source:'CNBC', time:'7 hours ago', url:'#', related:'JNJ, PFE, ABBV', isHighImpact:true, inSp500:true },
-    { id:3, headline:'Energy Prices Fluctuate on Global Supply Concerns', summary:'Oil and gas markets see volatility amid geopolitical tensions.', source:'Wall Street Journal', time:'9 hours ago', url:'#', related:'XOM, CVX', isHighImpact:true, isMacro:true, inSp500:true },
-    { id:4, headline:'Consumer Spending Shows Resilience Despite Uncertainty', summary:'Retail sales data exceeds expectations, indicating strong consumer demand.', source:'Financial Times', time:'11 hours ago', url:'#', related:'WMT, TGT, AMZN', inNasdaq:true, inSp500:true },
-    { id:5, headline:'Semiconductor Stocks Rally on AI Chip Demand Forecast', summary:'Chipmakers see gains as analysts project continued strong AI processor demand.', source:'MarketWatch', time:'1 day ago', url:'#', related:'NVDA, AMD, INTC', isHighImpact:true, inNasdaq:true, inSp500:true },
-    { id:6, headline:'Banking Sector Profits Beat Estimates on Trading Revenue', summary:'Major banks report better-than-expected profits driven by trading divisions.', source:'Bloomberg', time:'1 day ago', url:'#', related:'JPM, BAC, GS', isHighImpact:true, inSp500:true },
-    { id:7, headline:'Renewable Energy Investments Hit Record Levels', summary:'Global investment in renewables reaches all-time high.', source:'Reuters', time:'2 days ago', url:'#', related:'TSLA, ENPH, NEE', inNasdaq:true, inSp500:true }
+    { id:0, headline:'Tech Giants Report Strong Q4 Earnings, Market Rallies', summary:'Major technology companies exceeded Wall Street expectations with robust quarterly results.', source:'Bloomberg', time:'3 hours ago', url:'#', related:'AAPL, MSFT, GOOGL', isHighImpact:true, inNasdaq:true, inSp500:true, chipTickers:[{ticker:'AAPL',isSectorTop:false},{ticker:'MSFT',isSectorTop:false},{ticker:'GOOGL',isSectorTop:false}] },
+    { id:1, headline:'Federal Reserve Signals Cautious Approach to Rate Changes', summary:'Central bank officials indicate a measured stance on monetary policy adjustments.', source:'Reuters', time:'5 hours ago', url:'#', related:'SPY, DXY', isHighImpact:true, isMacro:true, chipTickers:[{ticker:'SPY',isSectorTop:false}] },
+    { id:2, headline:'Healthcare Sector Sees Major M&A Activity Surge', summary:'Pharma and biotech companies announce multiple M&A deals totaling billions.', source:'CNBC', time:'7 hours ago', url:'#', related:'JNJ, PFE, ABBV', isHighImpact:true, inSp500:true, chipTickers:[{ticker:'JNJ',isSectorTop:false},{ticker:'PFE',isSectorTop:false},{ticker:'ABBV',isSectorTop:false}] },
+    { id:3, headline:'Energy Prices Fluctuate on Global Supply Concerns', summary:'Oil and gas markets see volatility amid geopolitical tensions.', source:'Wall Street Journal', time:'9 hours ago', url:'#', related:'XOM, CVX', isHighImpact:true, isMacro:true, inSp500:true, chipTickers:[{ticker:'XOM',isSectorTop:false},{ticker:'CVX',isSectorTop:false}] },
+    { id:4, headline:'Consumer Spending Shows Resilience Despite Uncertainty', summary:'Retail sales data exceeds expectations, indicating strong consumer demand.', source:'Financial Times', time:'11 hours ago', url:'#', related:'WMT, TGT, AMZN', inNasdaq:true, inSp500:true, chipTickers:[{ticker:'WMT',isSectorTop:false},{ticker:'AMZN',isSectorTop:false}] },
+    { id:5, headline:'Semiconductor Stocks Rally on AI Chip Demand Forecast', summary:'Chipmakers see gains as analysts project continued strong AI processor demand.', source:'MarketWatch', time:'1 day ago', url:'#', related:'NVDA, AMD, INTC', isHighImpact:true, inNasdaq:true, inSp500:true, chipTickers:[{ticker:'NVDA',isSectorTop:false},{ticker:'AMD',isSectorTop:false}] },
+    { id:6, headline:'Banking Sector Profits Beat Estimates on Trading Revenue', summary:'Major banks report better-than-expected profits driven by trading divisions.', source:'Bloomberg', time:'1 day ago', url:'#', related:'JPM, BAC, GS', isHighImpact:true, inSp500:true, chipTickers:[{ticker:'JPM',isSectorTop:false},{ticker:'BAC',isSectorTop:false},{ticker:'GS',isSectorTop:false}] },
+    { id:7, headline:'Renewable Energy Investments Hit Record Levels', summary:'Global investment in renewables reaches all-time high.', source:'Reuters', time:'2 days ago', url:'#', related:'TSLA, ENPH, NEE', inNasdaq:true, inSp500:true, chipTickers:[{ticker:'TSLA',isSectorTop:false}] }
 ];
 
 window.onload = () => {
@@ -861,6 +2005,7 @@ window.onload = () => {
     updateInsights();
     filterNews();
     refreshScreener();
+    renderTrendingBox();
     fetchNews();
     setInterval(refreshScreener, 60000);
 };
